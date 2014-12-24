@@ -7,6 +7,12 @@ import sympy as sp
 from itertools import groupby
 from util import raise_if_not_shape
 
+# __all__
+__all__ = ['B',
+           'basis_functions',
+           'uniform_bspline_basis',
+           'Contour']
+
 
 # B
 @sp.cacheit
