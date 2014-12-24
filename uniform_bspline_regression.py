@@ -16,9 +16,10 @@ class Solver(object):
         i = np.arange(self._c.num_control_points if self._c.is_closed else
                       self._c.num_control_points - 1)
         j = (i + 1) % self._c.num_control_points
-        self._r_ij = i, j
+        self._ij = i, j
 
-    def minimise(self, Y, w, lambda_, u, X, max_num_iterations):
+    def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
+                 min_radius=1e-9, max_radius=1e12, initial_radius=1e4):
         w = np.atleast_1d(w)
         (N,) = w.shape
 
@@ -38,46 +39,48 @@ class Solver(object):
         self._w = np.sqrt(w)
         self._lambda = np.sqrt(lambda_)
 
-        # TODO Settings
-        self._max_radius = 1e12
-        self._min_radius = 1e-9
+        self._max_radius = max_radius
+        self._min_radius = min_radius
 
         self._decrease_factor = 2.0
-        self._radius = 1e-4
+        self._radius = initial_radius
 
-        n, d = u.shape[0], self._c.dim
+        N, d = u.shape[0], self._c.dim
 
-        reuse = False
+        update_schur_components = True
 
         for i in range(max_num_iterations):
-            # Compute Levenberg-Marquardt Step.
             if self._radius <= self._min_radius:
+                # Terminate if the trust region radius is too small.
                 break
 
-            # E is a block-diagonal matrix of `N` blocks, each of shape
-            # `(dim, 1)`.
-            # `E[i]` is a vector of shape `(dim,)` of the ith block.
-            if not reuse:
-                E = self._E(u, X)
-                F, G = self._F(u), self._G()
+            # Compute Levenberg-Marquardt step.
+            if update_schur_components:
+                # The actual E is a block-diagonal matrix of `N` blocks, each
+                # of shape `(dim, 1)`.
+                # `E[i]` is a vector of shape `(dim,)` of the `i`th block.
+                E, F, G = self._E(u, X), self._F(u), self._G()
 
-                EtF = np.empty((n, F.shape[1]))
-                for i in range(n):
+                EtF = np.empty((N, F.shape[1]))
+                for i in range(N):
                     EtF[i] = np.dot(E[i], F[d * i: d * (i + 1)])
                 FtE = EtF.T
 
                 H0 = np.dot(F.T, F) + np.dot(G.T, G)
 
-                ra, rb = self._r(u, X)
-                r = np.r_[ra, rb]
-                e = 0.5 * (np.dot(r, r))
+                e, (ra, rb, r) = self._e(u, X, return_all=True)
 
                 # a = Et * ra
                 a = (E * ra.reshape(-1, d)).sum(axis=1)
                 b = np.dot(F.T, ra) + np.dot(G.T, rb)
 
+            # `diag_EtEi` is the vector so that `np.diag(diag_EtEi)` is equal
+            # to (Et * E + diag)^-1, where `diag` is the diagonal matrix with
+            # entries equal to `1.0 / self._radius`.
             diag_EtEi = 1.0 / ((E * E).sum(axis=1) + 1.0 / self._radius)
 
+            # Solve the Schur reduced system for `delta_u` and `delta_X`, the
+            # updates for `u` and `X` respectively.
             H = (H0 + np.diag([1.0 / self._radius] * H0.shape[0])
                     - np.dot(FtE, diag_EtEi[:, np.newaxis] * EtF))
             try:
@@ -85,7 +88,7 @@ class Solver(object):
             except scipy.linalg.LinAlgError:
                 # Step is invalid.
                 self._reject_step()
-                reuse = True
+                update_schur_components = False
 
             t = b - np.dot(FtE, diag_EtEi * a)
             v1 = scipy.linalg.cho_solve(c_and_lower, t)
@@ -102,6 +105,8 @@ class Solver(object):
             # A_ = np.dot(J.T, J) + np.diag([1.0 / self._radius] * J.shape[1])
             # assert np.allclose(delta, np.dot(np.linalg.inv(A_), b_), atol=1e-4)
 
+            # Evaluate the change in energy as expected by the quadratic
+            # approximation.
             Jdelta = np.r_[(E * delta_u[:, np.newaxis]).ravel() +
                             np.dot(F, delta_X.ravel()),
                            np.dot(G, delta_X.ravel())]
@@ -111,21 +116,24 @@ class Solver(object):
             model_cost_change = -np.dot(Jdelta, r + Jdelta / 2.0)
             assert model_cost_change >= 0.0
 
+            # Evaluate the updated coordinates `u1` and control points `X1`.
             u1 = u + delta_u
             u1[u1 < 0] = 0.0
-            u1[u1 >= self._c.num_segments] = (self._c.num_segments +
-                                              np.finfo(u1.dtype).epsneg)
+            u1[u1 >= self._c.num_segments] = (self._c.num_segments - 1e-9)
             X1 = X + delta_X
 
+            # Accept the updates if the energy has decreased, and reject it
+            # otherwise. Also update the trust region radius depending on how
+            # well the quadratic approximation modelled the change in energy.
             e1 = self._e(u1, X1)
             step_quality = (e - e1) / model_cost_change
             if step_quality > 0:
                 self._accept_step(step_quality)
                 u, X = u1, X1
-                reuse = False
+                update_schur_components = True
             else:
                 self._reject_step()
-                reuse = True
+                update_schur_components = False
 
         return u, X
 
@@ -145,14 +153,17 @@ class Solver(object):
     def _r(self, u, X):
         R = self._w[:, np.newaxis] * (self._Y - self._c.M(u, X))
 
-        i, j = self._r_ij
+        i, j = self._ij
         Q = self._lambda * (X[j] - X[i])
 
         return R.ravel(), Q.ravel()
 
-    def _e(self, u, X):
+    def _e(self, u, X, return_all=False):
         ra, rb = self._r(u, X)
-        return 0.5 * (np.dot(ra, ra) + np.dot(rb, rb))
+        r = np.r_[ra, rb]
+        e = 0.5 * np.dot(r, r)
+        return (e if not return_all else
+                (e, (ra, rb, r)))
 
     def _E(self, u, X):
         Mu = -self._w[:, np.newaxis] * self._c.Mu(u, X)
@@ -162,10 +173,10 @@ class Solver(object):
         return -np.repeat(self._w, self._c.dim)[:,np.newaxis] * self._c.MX(u)
 
     def _G(self):
-        i, j = self._r_ij
-        n, d = i.shape[0], self._c.dim
-        G = np.zeros((n * d, self._c.num_control_points * d), dtype=float)
-        r = np.arange(n)
+        i, j = self._ij
+        N, d = i.shape[0], self._c.dim
+        G = np.zeros((N * d, self._c.num_control_points * d), dtype=float)
+        r = np.arange(N)
         for k in range(d):
             G[d * r + k, d * i + k] = -self._lambda
             G[d * r + k, d * j + k] =  self._lambda
