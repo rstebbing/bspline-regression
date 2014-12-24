@@ -96,22 +96,26 @@ class Solver(object):
             delta_u = -v0
             delta_X = -v1.reshape(-1, d)
 
-            # delta = np.r_[v0, v1]
-            # E_ = scipy.linalg.block_diag(*E[..., np.newaxis])
-            # Z = np.zeros((G.shape[0], E_.shape[1]))
-            # J = np.r_['0,2', np.c_[E_, F],
-            #                  np.c_[Z, G]]
-            # b_ = np.dot(J.T, np.r_[ra, rb])
-            # A_ = np.dot(J.T, J) + np.diag([1.0 / self._radius] * J.shape[1])
-            # assert np.allclose(delta, np.dot(np.linalg.inv(A_), b_), atol=1e-4)
+            # Equivalent:
+            #   E_ = scipy.linalg.block_diag(*E[..., np.newaxis])
+            #   Z = np.zeros((G.shape[0], E_.shape[1]))
+            #   J = np.r_['0,2', np.c_[E_, F],
+            #                    np.c_[Z, G]]
+            #   b_ = np.dot(J.T, np.r_[ra, rb])
+            #   A_ = np.dot(J.T, J) + np.diag(
+            #       [1.0 / self._radius] * J.shape[1])
+            #   assert np.allclose(np.r_[v0, v1],
+            #                      np.dot(np.linalg.inv(A_), b_), atol=1e-4)
 
             # Evaluate the change in energy as expected by the quadratic
             # approximation.
             Jdelta = np.r_[(E * delta_u[:, np.newaxis]).ravel() +
                             np.dot(F, delta_X.ravel()),
                            np.dot(G, delta_X.ravel())]
-            # Jdelta_ = np.dot(J, delta)
-            # assert np.allclose(Jdelta, Jdelta, atol=1e-4)
+
+            # Equivalent:
+            #   Jdelta_ = np.dot(J, -np.r_[v0, v1])
+            #   assert np.allclose(Jdelta, Jdelta_, atol=1e-4)
 
             model_cost_change = -np.dot(Jdelta, r + Jdelta / 2.0)
             assert model_cost_change >= 0.0
