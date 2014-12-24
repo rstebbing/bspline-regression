@@ -1,0 +1,147 @@
+# uniform_bspline.py
+
+# Imports
+import numpy as np
+import sympy as sp
+
+from itertools import groupby
+from util import raise_if_not_shape
+
+
+# B
+@sp.cacheit
+def B(i, k, x):
+    if k < 1:
+        raise ValueError('k < 1 (= {})'.format(k))
+    if i < 0:
+        raise ValueError('i < 0 (= {})'.format(i))
+    if not isinstance(x, sp.Symbol):
+        raise ValueError('x is not sympy.Symbol (type(x) = "{}")'.format(
+            type(x).__name__))
+
+    if k == 1:
+        f = [sp.S.One]
+    else:
+        b0, b1 = B(0, k - 1, x), B(1, k - 1, x)
+
+        h = sp.Rational(1, k - 1)
+        p0 = map(lambda e: h * x * e, b0)
+        p0.append(sp.S.Zero)
+        p1 = map(lambda e: h * (k - x) * e, b1)
+        assert len(p0) == len(p1)
+        f = map(lambda e0, e1: (e0 + e1).expand(), p0, p1)
+
+    return [sp.S.Zero] * i + map(lambda e: e.subs({x : x - i}), f)
+
+
+# basis_functions
+@sp.cacheit
+def basis_functions(d, x):
+    if d < 0:
+        raise ValueError('d < 0 (= {})'.format(d))
+
+    return map(lambda (i, b): b.subs({x : x + i}).expand(),
+               enumerate(B(0, d + 1, x)))[::-1]
+
+
+# uniform_bspline_basis
+UNIFORM_BSPLINE_TEMPLATE = """def {func_name}(t):
+    t = np.atleast_1d(t)
+    if np.any((t < 0) | (t > 1)):
+        raise ValueError('t < 0 or t > 1')
+
+    (N,) = t.shape
+    W = np.empty((N, {num_control_points}), dtype=float)
+{W}
+    return W
+"""
+@sp.cacheit
+def uniform_bspline_basis(d, p=0):
+    t = sp.Symbol('t')
+    b = basis_functions(d, t)
+    for i in range(p):
+        b = [sp.diff(e, t) for e in b]
+
+    func_name = 'uniform_bspline_basis_{}_{}'.format(d, p)
+    W = map(lambda (i, e): '    W[:, {}] = {}'.format(i, e.evalf()),
+            enumerate(b))
+    code = UNIFORM_BSPLINE_TEMPLATE.format(func_name=func_name,
+                                           num_control_points=len(W),
+                                           W='\n'.join(W))
+    globals_ = {'np' : np}
+    exec(code, globals_)
+    return globals_[func_name]
+
+
+# Contour
+class Contour(object):
+    def __init__(self, degree, num_control_points, dim, is_closed=False):
+        if degree < 1:
+            raise ValueError('degree < 1 (= {})'.format(degree))
+
+        self._degree = degree
+        self.num_control_points = num_control_points
+        self.dim = dim
+        self.is_closed = is_closed
+
+        self.num_segments = (num_control_points if is_closed else
+                             num_control_points - degree)
+        if self.num_segments <= 0:
+            raise ValueError('num_segments <= 0 (= {})'.format(
+                self.num_segments))
+
+        self._W = uniform_bspline_basis(degree, 0)
+        self._Wt = uniform_bspline_basis(degree, 1)
+
+    def uniform_parameterisation(self, N):
+        return np.linspace(0.0, self.num_segments, N, endpoint=False)
+
+    def M(self, u, X):
+        return self._f(self._W, u, X)
+
+    def Mu(self, u, X):
+        return self._f(self._Wt, u, X)
+
+    def MX(self, u):
+        u, s, t = self._u_to_s_t(u)
+        (N,) = u.shape
+
+        d = self.dim
+        R = np.zeros((N * d, self.num_control_points * d), dtype=float)
+        for s_, i in groupby(np.argsort(s), key=lambda i: s[i]):
+            i = np.array(list(i))
+            for j, w in zip(self._i(s_), self._W(t[i]).T):
+                for k in range(self.dim):
+                    R[d * i + k, d * j + k] = w
+        return R
+
+    def _f(self, f, u, X):
+        u, s, t = self._u_to_s_t(u)
+        (N,) = u.shape
+
+        X = np.atleast_2d(X)
+        raise_if_not_shape('X', X, (self.num_control_points, self.dim))
+
+        R = np.empty((N, self.dim), dtype=float)
+        for s_, i in groupby(np.argsort(s), key=lambda i: s[i]):
+            i = list(i)
+            R[i] = np.dot(f(t[i]), X[self._i(s_)])
+
+        return R
+
+    def _u_to_s_t(self, u):
+        u = np.atleast_1d(u)
+        (N,) = u.shape
+
+        s = np.floor(u).astype(int)
+        if np.any((s < 0) | (s >= self.num_segments)):
+            raise ValueError('s < 0 or s >= {}'.format(
+                self.num_segments))
+        t = u - s
+        assert np.all((0.0 <= t) & (t <= 1.0))
+
+        return u, s, t
+
+    def _i(self, s):
+        return map(lambda i: i % self.num_control_points,
+                   range(s, s + self._degree + 1))
