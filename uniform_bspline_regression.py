@@ -130,6 +130,8 @@ class Solver(object):
         return u, X
 
     def _accept_step(self, step_quality):
+        # Refer to Ceres and "Methods for Non-Linear Least Squares Problems"
+        # by Madsen.
         assert step_quality > 0.0
         self._radius /= max(1.0 / 3.0,
                             1.0 - (2.0 * step_quality - 1.0)**3)
