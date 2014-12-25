@@ -11,10 +11,10 @@ def raise_if_not_shape(name, A, shape):
         raise ValueError('{}.shape != {}'.format(name, shape))
 
 # previous_float
-PARSE_FLOAT_RE = re.compile(r'([+-]*)0x1\.([\d]{13})p(.*)')
+PARSE_FLOAT_RE = re.compile(r'([+-]*)0x1\.([\da-f]{13})p(.*)')
 def previous_float(x):
     """Return the next closest float (towards zero)."""
-    s, f, e = PARSE_FLOAT_RE.match(float(x).hex()).groups()
+    s, f, e = PARSE_FLOAT_RE.match(float(x).hex().lower()).groups()
     f, e = int(f, 16), int(e)
     if f > 0:
         f -= 1
