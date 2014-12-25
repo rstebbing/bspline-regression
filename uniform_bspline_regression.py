@@ -1,6 +1,8 @@
 # uniform_bspline_regression.py
 
 # Imports
+import argparse
+import json
 import numpy as np
 import scipy.linalg
 
@@ -187,70 +189,39 @@ class Solver(object):
         return G
 
 
-# Main
-import matplotlib.pyplot as plt
+# main
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_path')
+    parser.add_argument('lambda_', type=float)
+    parser.add_argument('output_path')
+    args = parser.parse_args()
 
-# Example contour `c` and control points `X`.
-c = Contour(2, 5, 2, is_closed=False)
-X = np.r_[0.0, 0,
-          1, 0,
-          2, 1,
-          3, 0,
-          4, 0].reshape(-1, 2)
+    print 'Input:', args.input_path
+    with open(args.input_path, 'rb') as fp:
+        z = json.load(fp)
 
-u = c.uniform_parameterisation(128)
-x, y = c.M(u, X).T
-dx, dy = c.Mu(u, X).T
+    degree, num_control_points, dim, is_closed = (
+        z['degree'], z['num_control_points'], z['dim'], z['is_closed'])
 
-f, axs = plt.subplots(3, 1)
-axs[0].plot(x, y)
-axs[1].plot(u, dx)
-axs[2].plot(u, dy)
+    print '  degree:', degree
+    print '  num_control_points:', num_control_points
+    print '  dim:', dim
+    print '  is_closed:', is_closed
+    c = Contour(degree, num_control_points, dim, is_closed=is_closed)
 
-# Example `Y`.
-x = np.linspace(0.0, np.pi, 64)
-y = np.sin(x)
-np.random.seed(0)
-x += 0.01 * np.random.randn(y.size)
-y += 0.02 * np.random.randn(y.size)
-Y = np.c_[x, y]
-Y *= 0.5
-Y[:, 0] += 1.0
+    Y, w, u, X = map(np.array, [z['Y'], z['w'], z['u'], z['X']])
+    print '  num_data_points:', Y.shape[0]
 
-# Example parameters.
-w = np.ones(Y.shape[0])
-lambda_ = 1e-2
+    print '  lambda_:', args.lambda_
+    u1, X1 = Solver(c).minimise(Y, w, args.lambda_, u, X)
 
-# Initialise `u`.
-import scipy.spatial
-u0 = c.uniform_parameterisation(16)
-D = scipy.spatial.distance.cdist(Y, c.M(u0, X))
-u = u0[np.argmin(D, axis=1)]
+    z['u'], z['X'] = u1.tolist(), X1.tolist()
 
-# Minimise.
-s = Solver(c)
-u1, X1 = s.minimise(Y, w, lambda_, u, X, 200)
+    print 'Output:', args.output_path
+    with open(args.output_path, 'wb') as fp:
+        fp.write(json.dumps(z, indent=4))
 
-f, ax = plt.subplots()
-ax.set_aspect('equal')
 
-x, y = Y.T
-ax.plot(x, y, 'ro')
-
-for y, y1 in zip(Y, c.M(u1, X1)):
-    x, y = np.r_['0,2', y, y1].T
-    ax.plot(x, y, 'r.-')
-
-x, y = X1.T
-ax.plot(x, y, 'bo--')
-
-x, y = c.M(c.uniform_parameterisation(256), X1).T
-ax.plot(x, y, 'b-', lw=3)
-
-x, y = X.T
-ax.plot(x, y, 'mo--')
-
-x, y = c.M(c.uniform_parameterisation(256), X).T
-ax.plot(x, y, 'm-', lw=3)
-
-plt.show()
+if __name__ == '__main__':
+    main()
