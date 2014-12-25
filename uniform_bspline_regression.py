@@ -58,7 +58,8 @@ class Solver(object):
             if update_schur_components:
                 # The actual E is a block-diagonal matrix of `N` blocks, each
                 # of shape `(dim, 1)`.
-                # `E[i]` is a vector of shape `(dim,)` of the `i`th block.
+                # Here, `E[i]` is a vector of shape `(dim,)` of the `i`th
+                # block.
                 E, F, G = self._E(u, X), self._F(u), self._G()
 
                 EtF = np.empty((N, F.shape[1]))
