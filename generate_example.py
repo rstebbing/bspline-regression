@@ -16,14 +16,19 @@ def main():
     parser.add_argument('num_control_points', type=int)
     parser.add_argument('num_data_points', type=int)
     parser.add_argument('output_path')
+    parser.add_argument('--alpha', type=float, default=1.0 / (2.0 * np.pi))
     parser.add_argument('--dim', type=int, choices={2, 3}, default=2)
+    parser.add_argument('--frequency', type=float, default=3.0)
     parser.add_argument('--num-init-points', type=int, default=16)
     parser.add_argument('--sigma', type=float, default=0.05)
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
+    print 'Parameters:'
+    print '  alpha:', args.alpha
+    print '  frequency:', args.frequency
     x = np.linspace(0.0, 2.0 * np.pi, args.num_data_points)
-    y = np.exp(-x / (2.0 * np.pi)) * np.sin(3.0 * x)
+    y = np.exp(-args.alpha * x) * np.sin(args.frequency * x)
 
     if args.dim == 2:
         Y = np.c_[x, y]
@@ -36,6 +41,7 @@ def main():
 
     if args.seed is not None:
         np.random.seed(args.seed)
+    print '  sigma:', args.sigma
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
     w = np.ones(args.num_data_points, dtype=float)
 
