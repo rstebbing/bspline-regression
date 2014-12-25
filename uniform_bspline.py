@@ -191,6 +191,21 @@ class Contour(object):
         """
         return np.linspace(0.0, self._u, N, endpoint=True)
 
+    def clip(self, u):
+        """Clip a vector of coordinates `u` to the domain of the contour.
+
+        Parameters
+        ----------
+        u : array_like
+            The vector of contour coordinates.
+
+        Returns
+        -------
+        clipped_u : float, np.ndarray
+            The vector of clipped contour coordinates.
+        """
+        return np.clip(u, 0.0, self._u)
+
     def M(self, u, X):
         """Evaluate points on the contour.
 
