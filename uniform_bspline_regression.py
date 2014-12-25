@@ -89,6 +89,7 @@ class Solver(object):
                 # Step is invalid.
                 self._reject_step()
                 update_schur_components = False
+                continue
 
             t = b - np.dot(FtE, diag_EtEi * a)
             v1 = scipy.linalg.cho_solve(c_and_lower, t)
