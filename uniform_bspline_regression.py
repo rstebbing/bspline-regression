@@ -122,9 +122,7 @@ class Solver(object):
             assert model_cost_change >= 0.0
 
             # Evaluate the updated coordinates `u1` and control points `X1`.
-            u1 = u + delta_u
-            u1[u1 < 0] = 0.0
-            u1[u1 >= self._c.num_segments] = (self._c.num_segments - 1e-9)
+            u1 = self._c.clip(u + delta_u)
             X1 = X + delta_X
 
             # Accept the updates if the energy has decreased, and reject it
