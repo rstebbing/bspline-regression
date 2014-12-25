@@ -5,7 +5,7 @@ import numpy as np
 import sympy as sp
 
 from itertools import groupby
-from util import raise_if_not_shape
+from util import previous_float, raise_if_not_shape
 
 # __all__
 __all__ = ['B',
@@ -170,6 +170,8 @@ class Contour(object):
             raise ValueError('num_segments <= 0 (= {})'.format(
                 self.num_segments))
 
+        self._u = previous_float(self.num_segments)
+
         self._W = uniform_bspline_basis(degree, 0)
         self._Wt = uniform_bspline_basis(degree, 1)
 
@@ -187,7 +189,7 @@ class Contour(object):
         u : float, np.ndarray of shape = (N,)
             The vector of contour coordinates.
         """
-        return np.linspace(0.0, self.num_segments, N, endpoint=False)
+        return np.linspace(0.0, self._u, N, endpoint=True)
 
     def M(self, u, X):
         """Evaluate points on the contour.
