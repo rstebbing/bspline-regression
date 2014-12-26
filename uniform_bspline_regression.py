@@ -22,8 +22,11 @@ class Solver(object):
 
     def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
                  min_radius=1e-9, max_radius=1e12, initial_radius=1e4):
-        w = np.atleast_1d(w)
-        (N,) = w.shape
+        w = np.atleast_2d(w)
+        N = w.shape[0]
+        raise_if_not_shape('w', w, (N, self._c.dim))
+        if np.any(w <= 0.0):
+            raise ValueError('w <= 0.0')
 
         Y = np.atleast_2d(Y)
         raise_if_not_shape('Y', Y, (N, self._c.dim))
@@ -33,6 +36,7 @@ class Solver(object):
 
         u = np.atleast_1d(u)
         raise_if_not_shape('u', u, (N,))
+        u = self._c.clip(u)
 
         X = np.atleast_2d(X)
         raise_if_not_shape('X', X, (self._c.num_control_points, self._c.dim))
@@ -157,7 +161,7 @@ class Solver(object):
         self._decrease_factor *= 2
 
     def _r(self, u, X):
-        R = self._w[:, np.newaxis] * (self._Y - self._c.M(u, X))
+        R = self._w * (self._Y - self._c.M(u, X))
 
         i, j = self._ij
         Q = self._lambda * (X[j] - X[i])
@@ -172,11 +176,11 @@ class Solver(object):
                 (e, (ra, rb, r)))
 
     def _E(self, u, X):
-        Mu = -self._w[:, np.newaxis] * self._c.Mu(u, X)
+        Mu = -self._w * self._c.Mu(u, X)
         return Mu
 
     def _F(self, u):
-        return -np.repeat(self._w, self._c.dim)[:,np.newaxis] * self._c.MX(u)
+        return -self._w.reshape(-1, 1) * self._c.MX(u)
 
     def _G(self):
         i, j = self._ij
