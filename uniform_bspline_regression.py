@@ -12,6 +12,8 @@ from util import raise_if_not_shape
 
 # Solver
 class Solver(object):
+    DEBUG = False
+
     def __init__(self, contour):
         self._c = contour
 
@@ -104,16 +106,14 @@ class Solver(object):
             delta_u = -v0
             delta_X = -v1.reshape(-1, d)
 
-            # Equivalent:
-            #   E_ = scipy.linalg.block_diag(*E[..., np.newaxis])
-            #   Z = np.zeros((G.shape[0], E_.shape[1]))
-            #   J = np.r_['0,2', np.c_[E_, F],
-            #                    np.c_[Z, G]]
-            #   b_ = np.dot(J.T, np.r_[ra, rb])
-            #   A_ = np.dot(J.T, J) + np.diag(
-            #       [1.0 / self._radius] * J.shape[1])
-            #   assert np.allclose(np.r_[v0, v1],
-            #                      np.dot(np.linalg.inv(A_), b_), atol=1e-4)
+            # Equivalent.
+            if self.DEBUG:
+                J = self._J(u, X)
+                b_ = np.dot(J.T, np.r_[ra, rb])
+                A_ = np.dot(J.T, J) + np.diag(
+                    [1.0 / self._radius] * J.shape[1])
+                assert np.allclose(np.r_[v0, v1],
+                                   np.dot(np.linalg.inv(A_), b_), atol=1e-4)
 
             # Evaluate the change in energy as expected by the quadratic
             # approximation.
@@ -121,9 +121,10 @@ class Solver(object):
                             np.dot(F, delta_X.ravel()),
                            np.dot(G, delta_X.ravel())]
 
-            # Equivalent:
-            #   Jdelta_ = np.dot(J, -np.r_[v0, v1])
-            #   assert np.allclose(Jdelta, Jdelta_, atol=1e-4)
+            # Equivalent.
+            if self.DEBUG:
+                Jdelta_ = np.dot(J, -np.r_[v0, v1])
+                assert np.allclose(Jdelta, Jdelta_, atol=1e-4)
 
             model_cost_change = -np.dot(Jdelta, r + Jdelta / 2.0)
             assert model_cost_change >= 0.0
@@ -192,6 +193,13 @@ class Solver(object):
             G[d * r + k, d * j + k] =  self._lambda
         return G
 
+    def _J(self, u, X):
+        """Calculate dense Jacobian. For debugging use only."""
+        E, F, G = self._E(u, X), self._F(u), self._G()
+        E_ = scipy.linalg.block_diag(*E[..., np.newaxis])
+        Z = np.zeros((G.shape[0], E_.shape[1]))
+        return np.r_['0,2', np.c_[E_, F],
+                            np.c_[Z, G]]
 
 # main
 def main():
