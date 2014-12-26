@@ -52,7 +52,7 @@ def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
     if 'Y' not in disable:
         plot(Y, '.', c=C['r'])
 
-    if 'Y' not in disable and 'M' not in disable:
+    if 'u' not in disable:
         for m, y in zip(c.M(u, X), Y):
             plot(np.r_['0,2', m, y], 'k-')
 
@@ -81,7 +81,7 @@ def main():
     parser.add_argument('--dpi', type=int, default=100)
     parser.add_argument('--empty', default=False, action='store_true')
     parser.add_argument('-d', '--disable', action='append', default=[],
-                        choices={'Y', 'M', 'X'})
+                        choices={'Y', 'u', 'M', 'X'})
     args = parser.parse_args()
 
     if not os.path.isdir(args.input_path):
