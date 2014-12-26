@@ -227,6 +227,10 @@ def main():
     parser.add_argument('input_path')
     parser.add_argument('output_path')
     parser.add_argument('--output-all', default=False, action='store_true')
+    parser.add_argument('--max-num-iterations', type=int, default=100)
+    parser.add_argument('--min-radius', type=float, default=1e-9)
+    parser.add_argument('--max-radius', type=float, default=1e12)
+    parser.add_argument('--initial-radius', type=float, default=1e4)
     args = parser.parse_args()
 
     print 'Input:', args.input_path
@@ -247,10 +251,21 @@ def main():
     print '  num_data_points:', Y.shape[0]
     print '  lambda_:', lambda_
 
-    print 'Solving:'
+    print 'Solver:'
+    print '  max_num_iterations:', args.max_num_iterations
+    print '  min_radius: {:g}'.format(args.min_radius)
+    print '  max_radius: {:g}'.format(args.max_radius)
+    print '  initial_radius: {:g}'.format(args.initial_radius)
+
+    print 'Solver Output:'
     ((u1, X1),
      has_converged, states, num_iterations, time_taken) = Solver(c).minimise(
-        Y, w, lambda_, u, X, return_all=True)
+        Y, w, lambda_, u, X,
+        max_num_iterations=args.max_num_iterations,
+        min_radius=args.min_radius,
+        max_radius=args.max_radius,
+        initial_radius=args.initial_radius,
+        return_all=True)
     print '  has_converged:', has_converged
     print '  num_iterations:', num_iterations
     print '  num_successful_iterations:', len(states) - 1
