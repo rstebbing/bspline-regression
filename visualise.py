@@ -119,5 +119,21 @@ def main():
                       bbox_inches=0.0, pad_inches='tight')
             plt.close(f)
 
+        f, axs = plt.subplots(2, 1)
+
+        axs[0].plot(map(lambda z: z['e'], states), 'bo-')
+        axs[0].set_yscale('log', basey=2)
+        axs[0].set_title('Energy')
+
+        axs[1].plot(map(lambda z: z['radius'], states), 'bo-')
+        axs[1].set_title('Radius')
+        axs[1].set_yscale('log')
+
+        output_path = os.path.join(args.output_path, 'Optimisation.png')
+        print '  ', output_path
+        f.savefig(output_path, dpi=args.dpi,
+                  bbox_inches=0.0, pad_inches='tight')
+        plt.close(f)
+
 if __name__ == '__main__':
     main()
