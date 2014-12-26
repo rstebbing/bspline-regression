@@ -197,7 +197,6 @@ class Solver(object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_path')
-    parser.add_argument('lambda_', type=float)
     parser.add_argument('output_path')
     args = parser.parse_args()
 
@@ -215,10 +214,11 @@ def main():
     c = Contour(degree, num_control_points, dim, is_closed=is_closed)
 
     Y, w, u, X = map(np.array, [z['Y'], z['w'], z['u'], z['X']])
+    lambda_ = z['lambda_']
     print '  num_data_points:', Y.shape[0]
+    print '  lambda_:', lambda_
 
-    print '  lambda_:', args.lambda_
-    u1, X1 = Solver(c).minimise(Y, w, args.lambda_, u, X)
+    u1, X1 = Solver(c).minimise(Y, w, lambda_, u, X)
 
     z['u'], z['X'] = u1.tolist(), X1.tolist()
 
