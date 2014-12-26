@@ -4,6 +4,7 @@
 import argparse
 import json
 import numpy as np
+import os
 import scipy.linalg
 from time import time
 
@@ -225,6 +226,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_path')
     parser.add_argument('output_path')
+    parser.add_argument('--output-all', default=False, action='store_true')
     args = parser.parse_args()
 
     print 'Input:', args.input_path
@@ -249,7 +251,6 @@ def main():
     ((u1, X1),
      has_converged, states, num_iterations, time_taken) = Solver(c).minimise(
         Y, w, lambda_, u, X, return_all=True)
-    z['u'], z['X'] = u1.tolist(), X1.tolist()
     print '  has_converged:', has_converged
     print '  num_iterations:', num_iterations
     print '  num_successful_iterations:', len(states) - 1
@@ -257,8 +258,21 @@ def main():
     print '  per_iteration: {:.3e}s'.format(time_taken / num_iterations)
 
     print 'Output:', args.output_path
-    with open(args.output_path, 'wb') as fp:
-        fp.write(json.dumps(z, indent=4))
+    if args.output_all:
+        if not os.path.exists(args.output_path):
+            os.makedirs(args.output_path)
+        for i, (u, X, e, radius) in enumerate(states):
+            z['u'], z['X'] = u.tolist(), X.tolist()
+            z['e'], z['radius'] = e, radius
+            output_path = os.path.join(args.output_path, '{}.json'.format(i))
+            print '  ', output_path
+            with open(output_path, 'wb') as fp:
+                fp.write(json.dumps(z, indent=4))
+
+    else:
+        z['u'], z['X'] = u1.tolist(), X1.tolist()
+        with open(args.output_path, 'wb') as fp:
+            fp.write(json.dumps(z, indent=4))
 
 
 if __name__ == '__main__':
