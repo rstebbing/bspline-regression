@@ -47,8 +47,8 @@ class Solver(object):
         self._w = np.sqrt(w)
         self._lambda = np.sqrt(lambda_)
 
-        self._max_radius = max_radius
         self._min_radius = min_radius
+        self._max_radius = max_radius
 
         self._decrease_factor = 2.0
         self._radius = initial_radius
@@ -66,8 +66,8 @@ class Solver(object):
             if update_schur_components:
                 # The actual E is a block-diagonal matrix of `N` blocks, each
                 # of shape `(dim, 1)`.
-                # Here, `E[i]` is a vector of shape `(dim,)` of the `i`th
-                # block.
+                # Here, `E[i]` is a vector for the `i`th block and is of shape
+                # `(dim,)`.
                 E, F, G = self._E(u, X), self._F(u), self._G()
 
                 EtF = np.empty((N, F.shape[1]))
@@ -126,8 +126,8 @@ class Solver(object):
                 Jdelta_ = np.dot(J, -np.r_[v0, v1])
                 assert np.allclose(Jdelta, Jdelta_, atol=1e-4)
 
-            model_cost_change = -np.dot(Jdelta, r + Jdelta / 2.0)
-            assert model_cost_change >= 0.0
+            model_e_decrease = -np.dot(Jdelta, r + Jdelta / 2.0)
+            assert model_e_decrease >= 0.0
 
             # Evaluate the updated coordinates `u1` and control points `X1`.
             u1 = self._c.clip(u + delta_u)
@@ -137,7 +137,7 @@ class Solver(object):
             # otherwise. Also update the trust region radius depending on how
             # well the quadratic approximation modelled the change in energy.
             e1 = self._e(u1, X1)
-            step_quality = (e - e1) / model_cost_change
+            step_quality = (e - e1) / model_e_decrease
             if step_quality > 0:
                 self._accept_step(step_quality)
                 u, X = u1, X1
@@ -201,6 +201,7 @@ class Solver(object):
         return np.r_['0,2', np.c_[E_, F],
                             np.c_[Z, G]]
 
+
 # main
 def main():
     parser = argparse.ArgumentParser()
@@ -221,7 +222,7 @@ def main():
     print '  is_closed:', is_closed
     c = Contour(degree, num_control_points, dim, is_closed=is_closed)
 
-    Y, w, u, X = map(np.array, [z['Y'], z['w'], z['u'], z['X']])
+    Y, w, u, X = map(lambda k: np.array(z[k]), 'YwuX')
     lambda_ = z['lambda_']
     print '  num_data_points:', Y.shape[0]
     print '  lambda_:', lambda_
