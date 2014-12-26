@@ -5,6 +5,7 @@ import argparse
 import json
 import numpy as np
 import scipy.linalg
+from time import time
 
 from uniform_bspline import Contour
 from util import raise_if_not_shape
@@ -23,7 +24,8 @@ class Solver(object):
         self._ij = i, j
 
     def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
-                 min_radius=1e-9, max_radius=1e12, initial_radius=1e4):
+                 min_radius=1e-9, max_radius=1e12, initial_radius=1e4,
+                 return_all=False):
         w = np.atleast_2d(w)
         N = w.shape[0]
         raise_if_not_shape('w', w, (N, self._c.dim))
@@ -55,11 +57,22 @@ class Solver(object):
 
         N, d = u.shape[0], self._c.dim
 
-        update_schur_components = True
+        if return_all:
+            states = []
+            def save_state(u, X, *args):
+                states.append((u.copy(), X.copy()) + args)
+        else:
+            def save_state(*args):
+                pass
 
+        save_state(u, X, self._e(u, X), self._radius)
+
+        t0 = time()
+        update_schur_components, has_converged = True, False
         for i in range(max_num_iterations):
             if self._radius <= self._min_radius:
                 # Terminate if the trust region radius is too small.
+                has_converged = True
                 break
 
             # Compute Levenberg-Marquardt step.
@@ -139,14 +152,19 @@ class Solver(object):
             e1 = self._e(u1, X1)
             step_quality = (e - e1) / model_e_decrease
             if step_quality > 0:
+                save_state(u1, X1, e1, self._radius)
+
                 self._accept_step(step_quality)
-                u, X = u1, X1
+                e, u, X = e1, u1, X1
                 update_schur_components = True
             else:
                 self._reject_step()
                 update_schur_components = False
 
-        return u, X
+        t1 = time()
+
+        return (((u, X), has_converged, states, i, t1 - t0) if return_all else
+                (u, X))
 
     def _accept_step(self, step_quality):
         # Refer to Ceres and "Methods for Non-Linear Least Squares Problems"
@@ -227,9 +245,16 @@ def main():
     print '  num_data_points:', Y.shape[0]
     print '  lambda_:', lambda_
 
-    u1, X1 = Solver(c).minimise(Y, w, lambda_, u, X)
-
+    print 'Solving:'
+    ((u1, X1),
+     has_converged, states, num_iterations, time_taken) = Solver(c).minimise(
+        Y, w, lambda_, u, X, return_all=True)
     z['u'], z['X'] = u1.tolist(), X1.tolist()
+    print '  has_converged:', has_converged
+    print '  num_iterations:', num_iterations
+    print '  num_successful_iterations:', len(states) - 1
+    print '  time_taken: {:.3e}s'.format(time_taken)
+    print '  per_iteration: {:.3e}s'.format(time_taken / num_iterations)
 
     print 'Output:', args.output_path
     with open(args.output_path, 'wb') as fp:
