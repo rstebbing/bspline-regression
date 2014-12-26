@@ -84,7 +84,7 @@ def main():
                         choices={'Y', 'M', 'X'})
     args = parser.parse_args()
 
-    if os.path.isfile(args.input_path):
+    if not os.path.isdir(args.input_path):
         print 'Input:', args.input_path
         with open(args.input_path, 'rb') as fp:
             z = json.load(fp)
