@@ -288,6 +288,7 @@ def main():
 
     else:
         z['u'], z['X'] = u1.tolist(), X1.tolist()
+        z['e'], z['radius'] = states[-1][2:]
         with open(args.output_path, 'wb') as fp:
             fp.write(json.dumps(z, indent=4))
 
