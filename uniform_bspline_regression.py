@@ -254,6 +254,8 @@ def main():
     print '  has_converged:', has_converged
     print '  num_iterations:', num_iterations
     print '  num_successful_iterations:', len(states) - 1
+    print '  initial_energy: {:.3e}'.format(states[0][2])
+    print '  final_energy: {:.3e}'.format(states[-1][2])
     print '  time_taken: {:.3e}s'.format(time_taken)
     print '  per_iteration: {:.3e}s'.format(time_taken / num_iterations)
 
