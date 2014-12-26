@@ -16,7 +16,7 @@ C = dict(b='#377EB8', r='#E41A1C')
 
 
 # generate_figure
-def generate_figure(z, num_samples, verbose=True):
+def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
     degree, num_control_points, dim, is_closed = (
         z['degree'], z['num_control_points'], z['dim'], z['is_closed'])
 
@@ -35,23 +35,37 @@ def generate_figure(z, num_samples, verbose=True):
     if Y.shape[1] == 3:
         kw['projection'] = '3d'
     f = plt.figure()
-    ax = f.add_subplot(111, **kw)
+    if empty:
+        ax = f.add_axes((0, 0, 1, 1))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
+        for spine in ax.spines.itervalues():
+            spine.set_visible(False)
+    else:
+        ax = f.add_subplot(111, **kw)
     ax.set_aspect('equal')
     def plot(X, *args, **kwargs):
         ax.plot(*(tuple(X.T) + args), **kwargs)
 
-    plot(Y, '.', c=C['r'])
+    if 'Y' not in disable:
+        plot(Y, '.', c=C['r'])
 
-    for m, y in zip(c.M(u, X), Y):
-        plot(np.r_['0,2', m, y], 'k-')
+    if 'Y' not in disable and 'M' not in disable:
+        for m, y in zip(c.M(u, X), Y):
+            plot(np.r_['0,2', m, y], 'k-')
 
-    plot(X, 'o--', ms=6.0, c=C['b'])
-    plot(c.M(c.uniform_parameterisation(num_samples), X), '-',
-         c=C['b'], lw=2.0)
+    if 'X' not in disable:
+        plot(X, 'o--', ms=6.0, c=C['b'])
+    if 'M' not in disable:
+        plot(c.M(c.uniform_parameterisation(num_samples), X), '-',
+             c=C['b'], lw=4.0)
 
-    e = z.get('e')
-    if e is not None:
-        ax.set_title('Energy: {:.7e}'.format(e))
+    if not empty:
+        e = z.get('e')
+        if e is not None:
+            ax.set_title('Energy: {:.7e}'.format(e))
 
     return f
 
@@ -65,13 +79,17 @@ def main():
     parser.add_argument('--width', type=float, default=6.0)
     parser.add_argument('--height', type=float, default=4.0)
     parser.add_argument('--dpi', type=int, default=100)
+    parser.add_argument('--empty', default=False, action='store_true')
+    parser.add_argument('-d', '--disable', action='append', default=[],
+                        choices={'Y', 'M', 'X'})
     args = parser.parse_args()
 
     if os.path.isfile(args.input_path):
         print 'Input:', args.input_path
         with open(args.input_path, 'rb') as fp:
             z = json.load(fp)
-        f = generate_figure(z, args.num_samples)
+        f = generate_figure(z, args.num_samples,
+                            empty=args.empty, disable=args.disable)
         if args.output_path is None:
             plt.show()
         else:
@@ -108,7 +126,9 @@ def main():
 
         print 'Output:'
         for input_file, z in zip(input_files, states):
-            f = generate_figure(z, args.num_samples, verbose=False)
+            f = generate_figure(z, args.num_samples,
+                                empty=args.empty, disable=args.disable,
+                                verbose=False)
 
             (ax,) = f.axes
             ax.set_xlim(*xlim)
