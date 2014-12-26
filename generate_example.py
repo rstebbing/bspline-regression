@@ -8,13 +8,18 @@ import scipy.spatial
 
 from uniform_bspline import Contour
 
+# float_tuple
+def float_tuple(s):
+    return tuple(float(f) for f in s.split(','))
 
 # main
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('num_data_points', type=int)
+    parser.add_argument('w', type=float_tuple)
+    parser.add_argument('lambda_', type=float)
     parser.add_argument('degree', type=int)
     parser.add_argument('num_control_points', type=int)
-    parser.add_argument('num_data_points', type=int)
     parser.add_argument('output_path')
     parser.add_argument('--alpha', type=float, default=1.0 / (2.0 * np.pi))
     parser.add_argument('--dim', type=int, choices={2, 3}, default=2)
@@ -43,7 +48,17 @@ def main():
         np.random.seed(args.seed)
     print '  sigma:', args.sigma
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
-    w = np.ones(args.num_data_points, dtype=float)
+
+    if len(args.w) == 1:
+        w = np.empty((args.num_data_points, args.dim), dtype=float)
+        w.fill(args.w[0])
+    elif len(args.w) == args.dim:
+        w = np.tile(args.w, (args.num_data_points, 1))
+    else:
+        raise ValueError('len(w) is invalid (= {})'.format(len(w)))
+
+    if args.lambda_ <= 0.0:
+        raise ValueError('lambda_ <= 0.0 (= {})'.format(args.lambda_))
 
     c = Contour(args.degree, args.num_control_points, args.dim)
     u0 = c.uniform_parameterisation(args.num_init_points)
@@ -57,6 +72,7 @@ def main():
              is_closed=False,
              Y=to_list(Y),
              w=to_list(w),
+             lambda_=args.lambda_,
              u=to_list(u),
              X=to_list(X))
 
