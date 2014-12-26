@@ -11,6 +11,10 @@ from mpl_toolkits.mplot3d import Axes3D
 from uniform_bspline import Contour
 
 
+# Colours
+C = dict(b='#377EB8', r='#E41A1C')
+
+
 # generate_figure
 def generate_figure(z, num_samples, verbose=True):
     degree, num_control_points, dim, is_closed = (
@@ -36,13 +40,14 @@ def generate_figure(z, num_samples, verbose=True):
     def plot(X, *args, **kwargs):
         ax.plot(*(tuple(X.T) + args), **kwargs)
 
-    plot(Y, 'ro')
+    plot(Y, '.', c=C['r'])
 
     for m, y in zip(c.M(u, X), Y):
         plot(np.r_['0,2', m, y], 'k-')
 
-    plot(X, 'bo--', ms=8.0)
-    plot(c.M(c.uniform_parameterisation(num_samples), X), 'b-', lw=2.0)
+    plot(X, 'o--', ms=6.0, c=C['b'])
+    plot(c.M(c.uniform_parameterisation(num_samples), X), '-',
+         c=C['b'], lw=2.0)
 
     e = z.get('e')
     if e is not None:
@@ -98,7 +103,7 @@ def main():
                      [])
         min_, max_ = zip(*bounds)
         min_, max_ = np.min(min_, axis=0), np.max(max_, axis=0)
-        d = 0.01 * (max_ - min_)
+        d = 0.025 * (max_ - min_)
         xlim, ylim = np.c_[min_ - d, max_ + d]
 
         print 'Output:'
@@ -121,11 +126,13 @@ def main():
 
         f, axs = plt.subplots(2, 1)
 
-        axs[0].plot(map(lambda z: z['e'], states), 'bo-')
+        axs[0].plot(map(lambda z: z['e'], states), '.-', c=C['b'])
+        axs[0].set_xlim(0, len(states) - 1)
         axs[0].set_yscale('log', basey=2)
         axs[0].set_title('Energy')
 
-        axs[1].plot(map(lambda z: z['radius'], states), 'bo-')
+        axs[1].plot(map(lambda z: z['radius'], states), '.-', c=C['b'])
+        axs[1].set_xlim(0, len(states) - 1)
         axs[1].set_title('Radius')
         axs[1].set_yscale('log')
 
@@ -134,6 +141,7 @@ def main():
         f.savefig(output_path, dpi=args.dpi,
                   bbox_inches=0.0, pad_inches='tight')
         plt.close(f)
+
 
 if __name__ == '__main__':
     main()
