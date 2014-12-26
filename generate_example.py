@@ -55,7 +55,7 @@ def main():
     elif len(args.w) == args.dim:
         w = np.tile(args.w, (args.num_data_points, 1))
     else:
-        raise ValueError('len(w) is invalid (= {})'.format(len(w)))
+        raise ValueError('len(w) is invalid (= {})'.format(len(args.w)))
 
     if args.lambda_ <= 0.0:
         raise ValueError('lambda_ <= 0.0 (= {})'.format(args.lambda_))
