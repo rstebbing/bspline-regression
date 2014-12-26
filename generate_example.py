@@ -12,6 +12,7 @@ from uniform_bspline import Contour
 def float_tuple(s):
     return tuple(float(f) for f in s.split(','))
 
+
 # main
 def main():
     parser = argparse.ArgumentParser()
