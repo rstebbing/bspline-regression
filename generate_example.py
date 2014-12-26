@@ -44,6 +44,11 @@ def main():
     t = np.linspace(0.0, 1.0, args.num_control_points)[:, np.newaxis]
     X = x0 * (1 - t) + x1 * t
 
+    c = Contour(args.degree, args.num_control_points, args.dim)
+    m0, m1 = c.M(c.uniform_parameterisation(2), X)
+    x01 = 0.5 * (x0 + x1)
+    X = (np.linalg.norm(x1 - x0) / np.linalg.norm(m1 - m0)) * (X - x01) + x01
+
     if args.seed is not None:
         np.random.seed(args.seed)
     print '  sigma:', args.sigma
@@ -60,7 +65,6 @@ def main():
     if args.lambda_ <= 0.0:
         raise ValueError('lambda_ <= 0.0 (= {})'.format(args.lambda_))
 
-    c = Contour(args.degree, args.num_control_points, args.dim)
     u0 = c.uniform_parameterisation(args.num_init_points)
     D = scipy.spatial.distance.cdist(Y, c.M(u0, X))
     u = u0[D.argmin(axis=1)]
