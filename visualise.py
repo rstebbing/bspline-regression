@@ -66,7 +66,7 @@ def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
         plot(X, 'o--', ms=6.0, c=C['b'])
     if 'M' not in disable:
         plot(c.M(c.uniform_parameterisation(num_samples), X), '-',
-             c=C['b'], lw=4.0)
+             c=C['b'], lw=3.0)
 
     if not empty:
         e = z.get('e')
