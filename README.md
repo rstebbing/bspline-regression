@@ -22,10 +22,9 @@ Dependencies
 * Sympy
 * matplotlib
 
-Examples
---------
+Getting Started
+---------------
 
-### 2D
 To generate the above example problem and initialisation:
 ```
 python generate_example.py 512 1 1e-1 3 14 Example_1.json --seed=0 --frequency=3.0
@@ -68,28 +67,48 @@ In [generate_example.py](generate_example.py), `X` is initialised to a straight 
 
 Visualising the initialisation is straightforward:
 ```
-python visualise.py Example_1.json
+python visualise.py Example_1.json --empty
 ```
 <p align="center">
   <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-1.png" alt="Initialisation"/>
 </p>
 where correspondences are shown in orange.
+(`--empty` generates a plot *without* axis labels or a title.)
 
 To solve for `X` and `u` and visualise the output:
 ```
 python uniform_bspline_regression.py Example_1.json Example_1_Output.json
-python visualise.py Example_1_Output.json
+python visualise.py Example_1_Output.json --empty
 ```
+<p align="center">
+  <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-2.png" alt="Solution"/>
+</p>
 
 Alternatively, to save and visualise *all* optimisation steps:
 ```
 python uniform_bspline_regression.py Example_1.json Example_1_Output --output-all
-python visualise.py Example_1_Output Example_1_Output_Visualisation --empty
+python visualise.py Example_1_Output Example_1_Output_Visualisation
 ```
 Additional arguments to [visualise.py](visualise.py) and [uniform_bspline_regression.py](uniform_bspline_regression.py) can be found with `--help`.
 
+### Additional Examples
+1. Fitting a uniform quadratic B-spline (5 control points) weighing errors along the x-axis more heavily than the y-axis:
 ```
-python generate_example.py 512 "1e1,1" 1e-1 5 16 512_1e1_1_1e-1_5_16_2.json --seed=0 --frequency=0.5
-python uniform_bspline_regression.py 512_1e1_1_1e-1_5_16_2.json 512_1e1_1_1e-1_5_16_2-1.json
-python visualise.py 512_1e1_1_1e-1_5_16_2-1.json
+python generate_example.py 256 "1e2,1" 1e-1 2 5 Example_2.json --seed=0 --frequency=0.75 --sigma=0.1 --alpha=-0.1
+python uniform_bspline_regression.py Example_2.json Example_2_Output.json
+python visualise.py Example_2_Output.json --empty
+```
+
+2. Fitting a uniform quintic B-spline (9 control points) to 65536 data points:
+```
+python generate_example.py 65356 1 1e-1 5 9 Example_3.json --seed=0 --frequency=2 --alpha=0
+python uniform_bspline_regression.py Example_3.json Example_3_Output.json
+python visualise.py Example_3_Output.json -d u -d X --empty
+```
+
+3. Fitting a quartic B-spline (10 control points) in 3D:
+```
+python generate_example.py 128 1 1e-1 4 10 Example_4.json --seed=0 --dim=3
+python uniform_bspline_regression.py Example_4.json Example_4_Output.json
+python visualise.py Example_4_Output.json --empty
 ```
