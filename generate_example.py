@@ -30,7 +30,7 @@ def main():
     parser.add_argument('output_path')
     parser.add_argument('--alpha', type=float, default=1.0 / (2.0 * np.pi))
     parser.add_argument('--dim', type=int, choices={2, 3}, default=2)
-    parser.add_argument('--frequency', type=float, default=3.0)
+    parser.add_argument('--frequency', type=float, default=1.0)
     parser.add_argument('--num-init-points', type=int, default=16)
     parser.add_argument('--sigma', type=float, default=0.05)
     parser.add_argument('--seed', type=int)
