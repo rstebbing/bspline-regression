@@ -61,6 +61,8 @@ def main():
     print '  sigma:', args.sigma
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
 
+    if np.any(np.asarray(args.w) < 0):
+        raise ValueError('w <= 0.0 (= {})'.format(args.w))
     if len(args.w) == 1:
         w = np.empty((args.num_data_points, args.dim), dtype=float)
         w.fill(args.w[0])
