@@ -18,8 +18,7 @@ from uniform_bspline import Contour
 
 
 # Colours
-C = dict(b='#377EB8', r='#E41A1C')
-
+C = dict(b='#377EB8', r='#E41A1C', g='#4DAF4A', o='#FF7F00')
 
 # generate_figure
 def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
@@ -42,9 +41,11 @@ def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
         kw['projection'] = '3d'
     f = plt.figure()
     if empty:
-        ax = f.add_axes((0, 0, 1, 1))
+        ax = f.add_axes((0, 0, 1, 1), **kw)
         ax.set_xticks([])
         ax.set_yticks([])
+        if Y.shape[1] == 3:
+            ax.set_zticks([])
         ax.xaxis.set_visible(False)
         ax.yaxis.set_visible(False)
         for spine in ax.spines.itervalues():
@@ -60,10 +61,10 @@ def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
 
     if 'u' not in disable:
         for m, y in zip(c.M(u, X), Y):
-            plot(np.r_['0,2', m, y], 'k-')
+            plot(np.r_['0,2', m, y], '-', c=C['o'])
 
     if 'X' not in disable:
-        plot(X, 'o--', ms=6.0, c=C['b'])
+        plot(X, 'o--', ms=6.0, c='k', mec='k')
     if 'M' not in disable:
         plot(c.M(c.uniform_parameterisation(num_samples), X), '-',
              c=C['b'], lw=3.0)
