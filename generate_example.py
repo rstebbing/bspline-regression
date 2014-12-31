@@ -57,6 +57,7 @@ def main():
     X = (np.linalg.norm(x1 - x0) / np.linalg.norm(m1 - m0)) * (X - x01) + x01
 
     if args.seed is not None:
+        print '  seed:', args.seed
         np.random.seed(args.seed)
     print '  sigma:', args.sigma
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
