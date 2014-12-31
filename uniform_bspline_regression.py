@@ -82,36 +82,47 @@ class Solver(object):
                 has_converged = True
                 break
 
-            # Compute Levenberg-Marquardt step.
+            # Compute damped Newton step.
             if update_schur_components:
+                # Error and residual components.
+                e, (ra, rb, r) = self._e(u, X, return_all=True)
+
+                # First derivatives.
                 # The actual E is a block-diagonal matrix of `N` blocks, each
                 # of shape `(dim, 1)`.
                 # Here, `E[i]` is a vector for the `i`th block and is of shape
                 # `(dim,)`.
                 E, F, G = self._E(u, X), self._F(u), self._G()
 
-                EtF = np.empty((N, F.shape[1]))
-                for i in range(N):
-                    EtF[i] = np.dot(E[i], F[d * i: d * (i + 1)])
-                FtE = EtF.T
+                # Second derivatives.
+                # `P` is the same dimensions as `E`.
+                P, Q = self._P(u, X), self._Q(u)
 
+                # (Partial) Schur diagonal.
+                D_EtE_rP = ((E * E).sum(axis=1) +
+                            (P * ra.reshape(-1, d)).sum(axis=1))
+
+                # Schur upper right and lower left blocks.
+                EtF_rQ = np.empty((N, F.shape[1]))
+                for i in range(N):
+                    EtF_rQ[i] = (np.dot(E[i], F[d * i: d * (i + 1)]) +
+                                  np.dot(ra[d * i: d * (i + 1)],
+                                         Q[d * i: d * (i + 1)]))
+                FtE_rQ = EtF_rQ.T
+
+                # (Partial) Schur lower right block.
                 H0 = np.dot(F.T, F) + np.dot(G.T, G)
 
-                e, (ra, rb, r) = self._e(u, X, return_all=True)
-
-                # a = Et * ra
+                # Schur right-hand side (a = Et * ra).
                 a = (E * ra.reshape(-1, d)).sum(axis=1)
                 b = np.dot(F.T, ra) + np.dot(G.T, rb)
 
-            # `diag_EtEi` is the vector so that `np.diag(diag_EtEi)` is equal
-            # to (Et * E + diag)^-1, where `diag` is the diagonal matrix with
-            # entries equal to `1.0 / self._radius`.
-            diag_EtEi = 1.0 / ((E * E).sum(axis=1) + 1.0 / self._radius)
+            # `D` is the vector of the inverse of the complete Schur diagonal.
+            D = 1.0 / (D_EtE_rP + 1.0 / self._radius)
 
-            # Solve the Schur reduced system for `delta_u` and `delta_X`, the
-            # updates for `u` and `X` respectively.
+            # Solve the Schur reduced system for `delta_u` and `delta_X`.
             H = (H0 + np.diag([1.0 / self._radius] * H0.shape[0])
-                    - np.dot(FtE, diag_EtEi[:, np.newaxis] * EtF))
+                    - np.dot(FtE_rQ, D[:, np.newaxis] * EtF_rQ))
             try:
                 c_and_lower = scipy.linalg.cho_factor(H)
             except scipy.linalg.LinAlgError:
@@ -120,18 +131,19 @@ class Solver(object):
                 update_schur_components = False
                 continue
 
-            t = b - np.dot(FtE, diag_EtEi * a)
+            t = b - np.dot(FtE_rQ, D * a)
             v1 = scipy.linalg.cho_solve(c_and_lower, t)
-            v0 = diag_EtEi * (a - np.dot(EtF, v1))
+            v0 = D * (a - np.dot(EtF_rQ, v1))
             delta_u = -v0
             delta_X = -v1.reshape(-1, d)
 
             # Equivalent.
             if self.DEBUG:
-                J = self._J(u, X)
+                J, S = self._J(u, X), self._S(u, X)
+
                 b_ = np.dot(J.T, np.r_[ra, rb])
-                A_ = np.dot(J.T, J) + np.diag(
-                    [1.0 / self._radius] * J.shape[1])
+                A_ = (np.dot(J.T, J) + S +
+                      np.diag([1.0 / self._radius] * J.shape[1]))
                 assert np.allclose(np.r_[v0, v1],
                                    np.dot(np.linalg.inv(A_), b_), atol=1e-4)
 
@@ -141,12 +153,13 @@ class Solver(object):
                             np.dot(F, delta_X.ravel()),
                            np.dot(G, delta_X.ravel())]
 
-            # Equivalent.
-            if self.DEBUG:
-                Jdelta_ = np.dot(J, -np.r_[v0, v1])
-                assert np.allclose(Jdelta, Jdelta_, atol=1e-4)
-
-            model_e_decrease = -np.dot(Jdelta, r + Jdelta / 2.0)
+            Sdelta = np.r_[D_EtE_rP * delta_u +
+                            np.dot(EtF_rQ, delta_X.ravel()),
+                           np.dot(EtF_rQ.T, delta_u) +
+                            np.dot(H0, delta_X.ravel())]
+            model_e_decrease = -(np.dot(r, Jdelta) +
+                                 0.5 * np.dot(np.r_[delta_u, delta_X.ravel()],
+                                              Sdelta))
             assert model_e_decrease >= 0.0
 
             # Evaluate the updated coordinates `u1` and control points `X1`.
@@ -204,8 +217,14 @@ class Solver(object):
     def _E(self, u, X):
         return -self._w * self._c.Mu(u, X)
 
+    def _P(self, u, X):
+        return -self._w * self._c.Muu(u, X)
+
     def _F(self, u):
         return -self._w.reshape(-1, 1) * self._c.MX(u)
+
+    def _Q(self, u):
+        return -self._w.reshape(-1, 1) * self._c.MuX(u)
 
     def _G(self):
         i, j = self._ij
@@ -225,6 +244,21 @@ class Solver(object):
         return np.r_['0,2', np.c_[E_, F],
                             np.c_[Z, G]]
 
+    def _S(self, u, X):
+        """Calculate symmetric dense matrix of second and mixed derivatives.
+        For debugging use only."""
+        P, Q = self._P(u, X), self._Q(u)
+        ra, rb = self._r(u, X)
+
+        N, d = u.shape[0], self._c.dim
+
+        n = N + X.size
+        Su = np.zeros((n, n), dtype=float)
+        Su[np.diag_indices(N)] = 0.5 * (P * ra.reshape(-1, d)).sum(axis=1)
+        for i in range(N):
+            for j in range(d):
+                Su[i, N:] += ra[d * i + j] * Q[d * i + j]
+        return Su + Su.T
 
 # main
 def main():
