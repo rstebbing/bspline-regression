@@ -180,6 +180,7 @@ class Contour(object):
 
         self._W = uniform_bspline_basis(degree, 0)
         self._Wt = uniform_bspline_basis(degree, 1)
+        self._Wtt = uniform_bspline_basis(degree, 2)
 
     def uniform_parameterisation(self, N):
         """Generate a vector of coordinates `u` which parameterise linearly
@@ -248,6 +249,24 @@ class Contour(object):
         """
         return self._f(self._Wt, u, X)
 
+    def Muu(self, u, X):
+        """Evaluate second derivatives with respect to `u` on the contour.
+
+        Parameters
+        ----------
+        u : float, array_like of shape = (N,)
+            The vector of contour coordinates.
+
+        X : float, array_like of shape = (num_control_points, dim)
+            The matrix of control point positions.
+
+        Returns
+        -------
+        Mu : float, np.ndarray of shape = (N, dim)
+            The matrix of evaluated second derivatives.
+        """
+        return self._f(self._Wtt, u, X)
+
     def MX(self, u):
         """Evaluate first derivatives with respect to `X` on the contour.
 
@@ -264,17 +283,26 @@ class Contour(object):
             component of the `i`th point with respect to component `l` of the
             `j`th control point.
         """
-        u, s, t = self._u_to_s_t(u)
-        (N,) = u.shape
+        return self._fX(self._W, u)
 
-        d = self.dim
-        R = np.zeros((N * d, self.num_control_points * d), dtype=float)
-        for s_, i in groupby(np.argsort(s), key=lambda i: s[i]):
-            i = np.array(list(i))
-            for j, w in zip(self._i(s_), self._W(t[i]).T):
-                for k in range(self.dim):
-                    R[d * i + k, d * j + k] = w
-        return R
+    def MuX(self, u):
+        """Evaluate the mixed derivatives with respect to `u` and `X` on the
+        contour.
+
+        Parameters
+        ----------
+        u : float, array_like of shape = (N,)
+            The vector of contour coordinates.
+
+        Returns
+        -------
+        M : float, np.ndarray of shape = (N * dim, num_control_points * dim)
+            The full matrix of mixed derivatives.
+            `M[dim * i + k, dim * j + l]` is the derivative of the `k`th
+            component of the `i`th point with respect to `u[i]` and component
+            `l` of the `j`th control point.
+        """
+        return self._fX(self._Wt, u)
 
     def _f(self, f, u, X):
         u, s, t = self._u_to_s_t(u)
@@ -288,6 +316,19 @@ class Contour(object):
             i = list(i)
             R[i] = np.dot(f(t[i]), X[self._i(s_)])
 
+        return R
+
+    def _fX(self, f, u):
+        u, s, t = self._u_to_s_t(u)
+        (N,) = u.shape
+
+        d = self.dim
+        R = np.zeros((N * d, self.num_control_points * d), dtype=float)
+        for s_, i in groupby(np.argsort(s), key=lambda i: s[i]):
+            i = np.array(list(i))
+            for j, w in zip(self._i(s_), f(t[i]).T):
+                for k in range(self.dim):
+                    R[d * i + k, d * j + k] = w
         return R
 
     def _u_to_s_t(self, u):
