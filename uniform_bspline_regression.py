@@ -202,8 +202,7 @@ class Solver(object):
                 (e, (ra, rb, r)))
 
     def _E(self, u, X):
-        Mu = -self._w * self._c.Mu(u, X)
-        return Mu
+        return -self._w * self._c.Mu(u, X)
 
     def _F(self, u):
         return -self._w.reshape(-1, 1) * self._c.MX(u)
