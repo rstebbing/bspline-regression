@@ -20,7 +20,6 @@ from util import raise_if_not_shape
 
 # LeastSquaresOptimiser
 class LeastSquaresOptimiser(object):
-    DEBUG = False
 
     def __init__(self, contour):
         self._c = contour
@@ -150,16 +149,6 @@ class LeastSquaresOptimiser(object):
             v0 = D * (a - np.dot(EtF_rQ, v1))
             delta_u = -v0
             delta_X = -v1.reshape(-1, d)
-
-            # Equivalent.
-            if self.DEBUG:
-                J, S = self._J(u, X), self._S(u, X)
-
-                b_ = np.dot(J.T, np.r_[ra, rb])
-                A_ = (np.dot(J.T, J) + S +
-                      np.diag([1.0 / self._radius] * J.shape[1]))
-                assert np.allclose(np.r_[v0, v1],
-                                   np.dot(np.linalg.inv(A_), b_), atol=1e-4)
 
             # Evaluate the change in energy as expected by the quadratic
             # approximation.
