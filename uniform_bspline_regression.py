@@ -33,6 +33,7 @@ class Solver(object):
     def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
                  min_radius=1e-9, max_radius=1e12, initial_radius=1e4,
                  return_all=False):
+        # Ensure input dimensions and values are valid.
         w = np.atleast_2d(w)
         N = w.shape[0]
         raise_if_not_shape('w', w, (N, self._c.dim))
@@ -52,17 +53,17 @@ class Solver(object):
         X = np.atleast_2d(X)
         raise_if_not_shape('X', X, (self._c.num_control_points, self._c.dim))
 
+        # Set `_Y`, `_w`, and `_lambda` for internal evaluation methods.
         self._Y = Y
         self._w = np.sqrt(w)
         self._lambda = np.sqrt(lambda_)
 
+        # Set internal variables for `_accept_step` and `_reject_step`.
         self._min_radius = min_radius
         self._max_radius = max_radius
 
         self._decrease_factor = 2.0
         self._radius = initial_radius
-
-        N, d = u.shape[0], self._c.dim
 
         if return_all:
             states = []
@@ -71,6 +72,8 @@ class Solver(object):
         else:
             def save_state(*args):
                 pass
+
+        d = self._c.dim
 
         save_state(u, X, self._e(u, X), self._radius)
 
