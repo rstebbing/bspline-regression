@@ -68,6 +68,9 @@ class LeastSquaresOptimiser(object):
         self._w = np.sqrt(w)
         self._lambda = np.sqrt(lambda_)
 
+        # `G` is constant and depends only on `_lambda`.
+        G = self._G()
+
         # Set internal variables for `_accept_step` and `_reject_step`.
         self._min_radius = min_radius
         self._max_radius = max_radius
@@ -105,7 +108,7 @@ class LeastSquaresOptimiser(object):
                 # of shape `(dim, 1)`.
                 # Here, `E[i]` is a vector for the `i`th block and is of shape
                 # `(dim,)`.
-                E, F, G = self._E(u, X), self._F(u), self._G()
+                E, F = self._E(u, X), self._F(u)
 
                 # Second derivatives.
                 # `P` is the same dimensions as `E`.
