@@ -18,8 +18,8 @@ from uniform_bspline import Contour
 from util import raise_if_not_shape
 
 
-# Solver
-class Solver(object):
+# LeastSquaresOptimiser
+class LeastSquaresOptimiser(object):
     DEBUG = False
 
     def __init__(self, contour):
@@ -297,15 +297,16 @@ def main():
     print '  num_data_points:', Y.shape[0]
     print '  lambda_:', lambda_
 
-    print 'Solver:'
+    print 'LeastSquaresOptimiser:'
     print '  max_num_iterations:', args.max_num_iterations
     print '  min_radius: {:g}'.format(args.min_radius)
     print '  max_radius: {:g}'.format(args.max_radius)
     print '  initial_radius: {:g}'.format(args.initial_radius)
 
-    print 'Solver Output:'
+    print 'LeastSquaresOptimiser Output:'
     ((u1, X1),
-     has_converged, states, num_iterations, time_taken) = Solver(c).minimise(
+     has_converged,
+     states, num_iterations, time_taken) = LeastSquaresOptimiser(c).minimise(
         Y, w, lambda_, u, X,
         max_num_iterations=args.max_num_iterations,
         min_radius=args.min_radius,
