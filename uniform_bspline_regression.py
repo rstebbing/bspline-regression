@@ -25,10 +25,21 @@ class Solver(object):
     def __init__(self, contour):
         self._c = contour
 
-        i = np.arange(self._c.num_control_points if self._c.is_closed else
-                      self._c.num_control_points - 1)
+        # Set `_Gij`.
+        n = (self._c.num_control_points if self._c.is_closed else
+             self._c.num_control_points - 1)
+        i = np.arange(n)
         j = (i + 1) % self._c.num_control_points
-        self._ij = i, j
+        self._Gij = i, j
+
+        # Initialise `_G0`.
+        n, d = i.shape[0], self._c.dim
+        G0 = np.zeros((n * d, self._c.num_control_points * d), dtype=float)
+        r = np.arange(n)
+        for k in range(d):
+            G0[d * r + k, d * i + k] = -1.0
+            G0[d * r + k, d * j + k] =  1.0
+        self._G0 = G0
 
     def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
                  min_radius=1e-9, max_radius=1e12, initial_radius=1e4,
@@ -205,7 +216,7 @@ class Solver(object):
     def _r(self, u, X):
         R = self._w * (self._Y - self._c.M(u, X))
 
-        i, j = self._ij
+        i, j = self._Gij
         Q = self._lambda * (X[j] - X[i])
 
         return R.ravel(), Q.ravel()
@@ -230,14 +241,7 @@ class Solver(object):
         return -self._w.reshape(-1, 1) * self._c.MuX(u)
 
     def _G(self):
-        i, j = self._ij
-        N, d = i.shape[0], self._c.dim
-        G = np.zeros((N * d, self._c.num_control_points * d), dtype=float)
-        r = np.arange(N)
-        for k in range(d):
-            G[d * r + k, d * i + k] = -self._lambda
-            G[d * r + k, d * j + k] =  self._lambda
-        return G
+        return self._lambda * self._G0
 
     def _J(self, u, X):
         """Calculate dense Jacobian. For debugging use only."""
