@@ -1,5 +1,5 @@
 ##########################################
-# File: uniform_bspline_regression.py    #
+# File: fit_uniform_bspline.py           #
 # Copyright Richard Stebbing 2014.       #
 # Distributed under the MIT License.     #
 # (See accompany file LICENSE or copy at #
