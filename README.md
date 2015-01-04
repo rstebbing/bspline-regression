@@ -76,7 +76,7 @@ where `--empty` generates the plot *without* axis labels or a title, and corresp
 
 To solve for `X` and `u`:
 ```
-python uniform_bspline_regression.py Example_1.json Example_1_Output.json
+python fit_uniform_bspline.py Example_1.json Example_1_Output.json
 ```
 and visualise the output:
 ```
@@ -88,16 +88,16 @@ python visualise.py Example_1_Output.json --empty
 
 Alternatively, to save and visualise *all* optimisation steps:
 ```
-python uniform_bspline_regression.py Example_1.json Example_1_Output --output-all
+python fit_uniform_bspline.py Example_1.json Example_1_Output --output-all
 python visualise.py Example_1_Output Example_1_Output_Visualisation
 ```
-Additional arguments to [visualise.py](visualise.py) and [uniform_bspline_regression.py](uniform_bspline_regression.py) can be found with `--help`.
+Additional arguments to [visualise.py](visualise.py) and [fit_uniform_bspline.py](fit_uniform_bspline.py) can be found with `--help`.
 
 ### Additional Examples
 - Fitting a uniform quadratic B-spline with 5 control points and penalising errors in the x- direction more heavily:
 ```
 python generate_example.py 256 "1e2,1" 1e-1 2 5 Example_2.json --seed=0 --frequency=0.75 --sigma=0.1 --alpha=-0.1
-python uniform_bspline_regression.py Example_2.json Example_2_Output.json
+python fit_uniform_bspline.py Example_2.json Example_2_Output.json
 python visualise.py Example_2_Output.json --empty
 ```
 <p align="center">
@@ -107,7 +107,7 @@ python visualise.py Example_2_Output.json --empty
 - Fitting a uniform quintic B-spline with 9 control points to 65536 data points:
 ```
 python generate_example.py 65356 1 1e-1 5 9 Example_3.json --seed=0 --frequency=2 --alpha=0
-python uniform_bspline_regression.py Example_3.json Example_3_Output.json
+python fit_uniform_bspline.py Example_3.json Example_3_Output.json
 python visualise.py Example_3_Output.json -d u -d X --empty
 ```
 <p align="center">
@@ -117,7 +117,7 @@ python visualise.py Example_3_Output.json -d u -d X --empty
 - Fitting a uniform quartic B-spline with 10 control points in 3D:
 ```
 python generate_example.py 128 1 1e-1 4 10 Example_4.json --seed=0 --dim=3
-python uniform_bspline_regression.py Example_4.json Example_4_Output.json
+python fit_uniform_bspline.py Example_4.json Example_4_Output.json
 python visualise.py Example_4_Output.json --empty
 ```
 <p align="center">
