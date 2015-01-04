@@ -17,6 +17,11 @@ License: MIT (refer to LICENSE)
 
 Dependencies
 ------------
+
+This repository is tested to work under Python 2.7 and Python 3.4.
+
+The required dependencies are:
+
 * Numpy
 * Scipy
 * Sympy
@@ -94,6 +99,7 @@ python visualise.py Example_1_Output Example_1_Output_Visualisation
 Additional arguments to [visualise.py](visualise.py) and [fit_uniform_bspline.py](fit_uniform_bspline.py) can be found with `--help`.
 
 ### Additional Examples
+
 - Fitting a uniform quadratic B-spline with 5 control points and penalising errors in the x- direction more heavily:
 ```
 python generate_example.py 256 "1e2,1" 1e-1 2 5 Example_2.json --seed=0 --frequency=0.75 --sigma=0.1 --alpha=-0.1
