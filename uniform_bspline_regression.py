@@ -61,10 +61,72 @@ class UniformBSplineLeastSquaresOptimiser(object):
             G0[d * r + k, d * j + k] =  1.0
         self._G0 = G0
 
-    def minimise(self, Y, w, lambda_, u, X, max_num_iterations=100,
-                 min_radius=1e-9, max_radius=1e12, initial_radius=1e4,
-                 return_all=False):
-        # Ensure input dimensions and values are valid.
+    def minimise(self, Y, w, lambda_, u, X, return_all=False,
+                 max_num_iterations=100,
+                 min_radius=1e-9, max_radius=1e12, initial_radius=1e4):
+        """Minimise the sum of squared errors between the uniform B-spline
+        specified by `X` and the positions of unstructured data points `Y`.
+        The exact expression minimised with respect to `X` and `u` is:
+
+            0.5 * ( sum((w * (Y - M(u, X)))**2) + lambda_ * R(X) )
+
+        where `M` is the uniform B-spline position function and `R` is the
+        regularisation function (the sum of squared distances between
+        adjacent control points).
+
+        Parameters
+        ----------
+        Y : float, array_like of shape = (N, dim)
+            The matrix of data point positions.
+
+        w : float, array_like of shape = (N, dim)
+            The matrix of non-negative residual weights.
+
+        lambda_ : float
+            The non-negative float that specifies the amount of regularisation.
+
+        u : float, array_like of shape = (N,)
+            The vector of initial contour correspondences. Optimally, `u[i]` is
+            the contour coordinate that minimises the squared distance between
+            the uniform B-spline and `Y[i]`: `Y[i] - M(u[i], X)`. Here, only a
+            coarse initialisation is (typically) required.
+
+        X : float, array_like of shape = (num_control_points, dim)
+            The matrix of initial control point positions.
+
+        return_all : optional, bool
+            If True, a tuple is returned of the form
+            `(u, X, has_converged, states, n, t)` where:
+                `u` is the optimised vector of correspondences;
+                `X` is the optimised matrix of control point positions;
+                `has_converged` is True if the optimisation terminated by
+                    reaching the minimum trust region radius and False
+                    otherwise;
+                `states` is a list of optimisation states comprising of the
+                    `u`, `X`, energy, and trust region radius after each
+                    successful optimisation step;
+                `n` is the number of total optimisation steps;
+                `t` is the total time taken (measured using `time.time`).
+            Otherwise, `minimise` returns `(u, X)`.
+
+        max_num_iterations : optional, int
+            The maximum number of optimisation iterations.
+
+        min_radius: optional, float
+            The non-negative minimum trust region radius. If the trust region
+            radius falls below this value, optimisation terminates.
+
+        max_radius : optional, float
+            The non-negative maximum trust region radius.
+
+        initial_radius : optional, float
+            The initial non-negative trust region radius.
+
+        Returns
+        -------
+        See `return_all`.
+        """
+        # Ensure that the dimensions and values of inputs are valid.
         w = np.atleast_2d(w)
         N = w.shape[0]
         raise_if_not_shape('w', w, (N, self._c.dim))
