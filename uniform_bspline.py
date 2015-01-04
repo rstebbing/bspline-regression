@@ -176,7 +176,7 @@ class UniformBSpline(object):
             raise ValueError('num_segments <= 0 (= {})'.format(
                 self.num_segments))
 
-        self._u = previous_float(self.num_segments)
+        self._max_u = previous_float(self.num_segments)
 
         self._W = uniform_bspline_basis(degree, 0)
         self._Wt = uniform_bspline_basis(degree, 1)
@@ -196,7 +196,7 @@ class UniformBSpline(object):
         u : float, np.ndarray of shape = (N,)
             The vector of contour coordinates.
         """
-        return np.linspace(0.0, self._u, N, endpoint=True)
+        return np.linspace(0.0, self._max_u, N, endpoint=True)
 
     def clip(self, u):
         """Clip a vector of coordinates `u` to the domain of the contour.
@@ -211,7 +211,8 @@ class UniformBSpline(object):
         clipped_u : float, np.ndarray
             The vector of clipped contour coordinates.
         """
-        return np.clip(u, 0.0, self._u)
+        return ((np.asarray(u) % self.num_segments) if self.is_closed else
+                 np.clip(u, 0.0, self._max_u))
 
     def M(self, u, X):
         """Evaluate points on the contour.
