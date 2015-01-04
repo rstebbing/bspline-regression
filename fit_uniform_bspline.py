@@ -7,6 +7,7 @@
 ##########################################
 
 # Imports
+from __future__ import print_function
 import argparse
 import json
 import numpy as np
