@@ -20,9 +20,15 @@ from util import raise_if_not_shape
 
 # LeastSquaresOptimiser
 class LeastSquaresOptimiser(object):
+    SOLVER_TYPES = frozenset(['dn', 'lm'])
 
-    def __init__(self, contour):
+    def __init__(self, contour, solver_type='dn'):
         self._c = contour
+
+        solver_type = solver_type.lower()
+        if solver_type not in self.SOLVER_TYPES:
+            raise ValueError('solver_type not in {}'.format(SOLVER_TYPES))
+        self._solver_type = solver_type
 
         # Set `_Gij`.
         n = (self._c.num_control_points if self._c.is_closed else
@@ -100,38 +106,47 @@ class LeastSquaresOptimiser(object):
                 has_converged = True
                 break
 
-            # Compute damped Newton step.
+            # Compute a damped Newton or Levenberg-Marquardt step depending on
+            # `_solver_type`.
             if update_schur_components:
                 # Error and residual components.
                 e, (ra, rb, r) = self._e(u, X, return_all=True)
 
                 # First derivatives.
                 # The actual E is a block-diagonal matrix of `N` blocks, each
-                # of shape `(dim, 1)`.
-                # Here, `E[i]` is a vector for the `i`th block and is of shape
-                # `(dim,)`.
+                # of shape `(dim, 1)` (where `N = u.shape[0]`).
+                # Here, `E` is a list of length `N`, where `E[i]` is a vector
+                # for the `i`th block and is of shape `(dim,)`.
                 E, F = self._E(u, X), self._F(u)
 
-                # Second derivatives.
-                # `P` is the same dimensions as `E`.
-                P, Q = self._P(u, X), self._Q(u)
+                # Set (partially) the Schur diagonal.
+                D_EtE_rP = (E * E).sum(axis=1)
 
-                # (Partial) Schur diagonal.
-                D_EtE_rP = ((E * E).sum(axis=1) +
-                            (P * ra.reshape(-1, d)).sum(axis=1))
-
-                # Schur upper right and lower left blocks.
+                # Set the Schur upper right block.
                 EtF_rQ = np.empty((N, F.shape[1]))
                 for i in range(N):
-                    EtF_rQ[i] = (np.dot(E[i], F[d * i: d * (i + 1)]) +
-                                  np.dot(ra[d * i: d * (i + 1)],
-                                         Q[d * i: d * (i + 1)]))
+                    EtF_rQ[i] = np.dot(E[i], F[d * i: d * (i + 1)])
+
+                # For damped Newton, add the second and mixed derivative terms
+                # to `D_EtE_rP` and `EtF_rQ`.
+                if self._solver_type == 'dn':
+                    # Second derivatives.
+                    # `P` is the same dimensions as `E`.
+                    P, Q = self._P(u, X), self._Q(u)
+
+                    D_EtE_rP += (P * ra.reshape(-1, d)).sum(axis=1)
+
+                    for i in range(N):
+                        EtF_rQ[i] += np.dot(ra[d * i: d * (i + 1)],
+                                             Q[d * i: d * (i + 1)])
+
+                # Set the Schur lower left block.
                 FtE_rQ = EtF_rQ.T
 
-                # (Partial) Schur lower right block.
+                # Set (partially) the Schur lower right block.
                 H0 = np.dot(F.T, F) + np.dot(G.T, G)
 
-                # Schur right-hand side (a = Et * ra).
+                # Set the Schur right-hand side components (a = Et * ra).
                 a = (E * ra.reshape(-1, d)).sum(axis=1)
                 b = np.dot(F.T, ra) + np.dot(G.T, rb)
 
@@ -157,14 +172,18 @@ class LeastSquaresOptimiser(object):
 
             # Evaluate the change in energy as expected by the quadratic
             # approximation.
-            Jdelta = np.r_[(E * delta_u[:, np.newaxis]).ravel() +
-                            np.dot(F, delta_X.ravel()),
-                           np.dot(G, delta_X.ravel())]
+            # For `solver_type == 'lm'`, `D_EtE_rP` and `EtF_rQ` do not contain
+            # the second and mixed derivative terms so the following is OK
+            # although could be done (slightly) more efficiently.
+            Jdelta = np.r_[
+                (E * delta_u[:, np.newaxis]).ravel() + np.dot(F, delta_X.ravel()),
+                np.dot(G, delta_X.ravel())
+            ]
 
-            Sdelta = np.r_[D_EtE_rP * delta_u +
-                            np.dot(EtF_rQ, delta_X.ravel()),
-                           np.dot(EtF_rQ.T, delta_u) +
-                            np.dot(H0, delta_X.ravel())]
+            Sdelta = np.r_[
+                D_EtE_rP * delta_u + np.dot(EtF_rQ, delta_X.ravel()),
+                np.dot(EtF_rQ.T, delta_u) + np.dot(H0, delta_X.ravel())
+            ]
             model_e_decrease = -(np.dot(r, Jdelta) +
                                  0.5 * np.dot(np.r_[delta_u, delta_X.ravel()],
                                               Sdelta))
