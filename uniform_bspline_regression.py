@@ -222,7 +222,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
                 FtE_rQ = EtF_rQ.T
 
                 # Set (partially) the Schur lower right block.
-                H0 = np.dot(F.T, F) + np.dot(G.T, G)
+                S0 = np.dot(F.T, F) + np.dot(G.T, G)
 
                 # Set the Schur right-hand side components (a = Et * ra).
                 a = (E * ra.reshape(-1, d)).sum(axis=1)
@@ -232,10 +232,10 @@ class UniformBSplineLeastSquaresOptimiser(object):
             D = 1.0 / (D_EtE_rP + 1.0 / self._radius)
 
             # Solve the Schur reduced system for `delta_u` and `delta_X`.
-            H = (H0 + np.diag([1.0 / self._radius] * H0.shape[0])
+            S = (S0 + np.diag([1.0 / self._radius] * S0.shape[0])
                     - np.dot(FtE_rQ, D[:, np.newaxis] * EtF_rQ))
             try:
-                c_and_lower = scipy.linalg.cho_factor(H)
+                c_and_lower = scipy.linalg.cho_factor(S)
             except scipy.linalg.LinAlgError:
                 # Step is invalid.
                 self._reject_step()
@@ -258,13 +258,13 @@ class UniformBSplineLeastSquaresOptimiser(object):
                 np.dot(G, delta_X.ravel())
             ]
 
-            Sdelta = np.r_[
+            Hdelta = np.r_[
                 D_EtE_rP * delta_u + np.dot(EtF_rQ, delta_X.ravel()),
-                np.dot(EtF_rQ.T, delta_u) + np.dot(H0, delta_X.ravel())
+                np.dot(EtF_rQ.T, delta_u) + np.dot(S0, delta_X.ravel())
             ]
             model_e_decrease = -(np.dot(r, Jdelta) +
                                  0.5 * np.dot(np.r_[delta_u, delta_X.ravel()],
-                                              Sdelta))
+                                              Hdelta))
             assert model_e_decrease >= 0.0
 
             # Evaluate the updated coordinates `u1` and control points `X1`.
