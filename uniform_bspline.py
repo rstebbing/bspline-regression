@@ -57,13 +57,13 @@ def B(i, k, x):
         b0, b1 = B(0, k - 1, x), B(1, k - 1, x)
 
         h = sp.Rational(1, k - 1)
-        p0 = map(lambda e: h * x * e, b0)
+        p0 = [h* x * e for e in b0]
         p0.append(sp.S.Zero)
-        p1 = map(lambda e: h * (k - x) * e, b1)
+        p1 = [h * (k - x) * e for e in b1]
         assert len(p0) == len(p1)
         f = map(lambda e0, e1: (e0 + e1).expand(), p0, p1)
 
-    return [sp.S.Zero] * i + map(lambda e: e.subs({x : x - i}), f)
+    return [sp.S.Zero] * i + [e.subs({x : x - i}) for e in f]
 
 
 # basis_functions
@@ -88,8 +88,8 @@ def basis_functions(d, x):
     if d < 0:
         raise ValueError('d < 0 (= {})'.format(d))
 
-    return map(lambda (i, b): b.subs({x : x + i}).expand(),
-               enumerate(B(0, d + 1, x)))[::-1]
+    return [ib[1].subs({x : x + ib[0]}).expand()
+            for ib in enumerate(B(0, d + 1, x))][::-1]
 
 
 # uniform_bspline_basis
@@ -129,8 +129,8 @@ def uniform_bspline_basis(d, p=0):
         b = [sp.diff(e, t) for e in b]
 
     func_name = 'uniform_bspline_basis_{}_{}'.format(d, p)
-    W = map(lambda (i, e): '    W[:, {}] = {}'.format(i, e.evalf()),
-            enumerate(b))
+    W = ['    W[:, {}] = {}'.format(ie[0], ie[1].evalf())
+         for ie in enumerate(b)]
     code = UNIFORM_BSPLINE_TEMPLATE.format(func_name=func_name,
                                            num_control_points=len(W),
                                            W='\n'.join(W))
@@ -348,5 +348,5 @@ class UniformBSpline(object):
 
     def _i(self, s):
         """Provide the control point indices for segment `s`."""
-        return map(lambda i: i % self.num_control_points,
-                   range(s, s + self._degree + 1))
+        return [i % self.num_control_points
+                for i in range(s, s + self._degree + 1)]

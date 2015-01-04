@@ -431,32 +431,32 @@ def main():
     parser.add_argument('--initial-radius', type=float, default=1e4)
     args = parser.parse_args()
 
-    print 'Input:', args.input_path
-    with open(args.input_path, 'rb') as fp:
+    print('Input:', args.input_path)
+    with open(args.input_path, 'r') as fp:
         z = json.load(fp)
 
     degree, num_control_points, dim, is_closed = (
         z['degree'], z['num_control_points'], z['dim'], z['is_closed'])
 
-    print '  degree:', degree
-    print '  num_control_points:', num_control_points
-    print '  dim:', dim
-    print '  is_closed:', is_closed
+    print('  degree:', degree)
+    print('  num_control_points:', num_control_points)
+    print('  dim:', dim)
+    print('  is_closed:', is_closed)
     c = UniformBSpline(degree, num_control_points, dim, is_closed=is_closed)
 
-    Y, w, u, X = map(lambda k: np.array(z[k]), 'YwuX')
+    Y, w, u, X = [np.array(z[k]) for k in 'YwuX']
     lambda_ = z['lambda_']
-    print '  num_data_points:', Y.shape[0]
-    print '  lambda_:', lambda_
+    print('  num_data_points:', Y.shape[0])
+    print('  lambda_:', lambda_)
 
-    print 'UniformBSplineLeastSquaresOptimiser:'
-    print '  solver_type:', args.solver_type
-    print '  max_num_iterations:', args.max_num_iterations
-    print '  min_radius: {:g}'.format(args.min_radius)
-    print '  max_radius: {:g}'.format(args.max_radius)
-    print '  initial_radius: {:g}'.format(args.initial_radius)
+    print('UniformBSplineLeastSquaresOptimiser:')
+    print('  solver_type:', args.solver_type)
+    print('  max_num_iterations:', args.max_num_iterations)
+    print('  min_radius: {:g}'.format(args.min_radius))
+    print('  max_radius: {:g}'.format(args.max_radius))
+    print('  initial_radius: {:g}'.format(args.initial_radius))
 
-    print 'UniformBSplineLeastSquaresOptimiser Output:'
+    print('UniformBSplineLeastSquaresOptimiser Output:')
     (u1, X1,
      has_converged,
      states, num_iterations, time_taken
@@ -467,15 +467,15 @@ def main():
         max_radius=args.max_radius,
         initial_radius=args.initial_radius,
         return_all=True)
-    print '  has_converged:', has_converged
-    print '  num_iterations:', num_iterations
-    print '  num_successful_iterations:', len(states) - 1
-    print '  initial_energy: {:.3e}'.format(states[0][2])
-    print '  final_energy: {:.3e}'.format(states[-1][2])
-    print '  time_taken: {:.3e}s'.format(time_taken)
-    print '  per_iteration: {:.3e}s'.format(time_taken / num_iterations)
+    print('  has_converged:', has_converged)
+    print('  num_iterations:', num_iterations)
+    print('  num_successful_iterations:', len(states) - 1)
+    print('  initial_energy: {:.3e}'.format(states[0][2]))
+    print('  final_energy: {:.3e}'.format(states[-1][2]))
+    print('  time_taken: {:.3e}s'.format(time_taken))
+    print('  per_iteration: {:.3e}s'.format(time_taken / num_iterations))
 
-    print 'Output:', args.output_path
+    print('Output:', args.output_path)
     if args.output_all:
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
@@ -483,14 +483,14 @@ def main():
             z['u'], z['X'] = u.tolist(), X.tolist()
             z['e'], z['radius'] = e, radius
             output_path = os.path.join(args.output_path, '{}.json'.format(i))
-            print '  ', output_path
-            with open(output_path, 'wb') as fp:
+            print('  ', output_path)
+            with open(output_path, 'w') as fp:
                 fp.write(json.dumps(z, indent=4))
 
     else:
         z['u'], z['X'] = u1.tolist(), X1.tolist()
         z['e'], z['radius'] = states[-1][2:]
-        with open(args.output_path, 'wb') as fp:
+        with open(args.output_path, 'w') as fp:
             fp.write(json.dumps(z, indent=4))
 
 

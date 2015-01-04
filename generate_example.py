@@ -36,9 +36,9 @@ def main():
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
-    print 'Parameters:'
-    print '  alpha:', args.alpha
-    print '  frequency:', args.frequency
+    print('Parameters:')
+    print('  alpha:', args.alpha)
+    print('  frequency:', args.frequency)
     x = np.linspace(0.0, 2.0 * np.pi, args.num_data_points)
     y = np.exp(-args.alpha * x) * np.sin(args.frequency * x)
 
@@ -57,9 +57,9 @@ def main():
     X = (np.linalg.norm(x1 - x0) / np.linalg.norm(m1 - m0)) * (X - x01) + x01
 
     if args.seed is not None:
-        print '  seed:', args.seed
+        print('  seed:', args.seed)
         np.random.seed(args.seed)
-    print '  sigma:', args.sigma
+    print('  sigma:', args.sigma)
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
 
     if np.any(np.asarray(args.w) < 0):
@@ -90,8 +90,8 @@ def main():
              u=to_list(u),
              X=to_list(X))
 
-    print 'Output:', args.output_path
-    with open(args.output_path, 'wb') as fp:
+    print('Output:', args.output_path)
+    with open(args.output_path, 'w') as fp:
         fp.write(json.dumps(z, indent=4))
 
 
