@@ -80,7 +80,8 @@ class UniformBSplineLeastSquaresOptimiser(object):
             The matrix of data point positions.
 
         w : float, array_like of shape = (N, dim)
-            The matrix of non-negative residual weights.
+            The matrix of non-negative weights applied to each squared residual
+            on each dimension.
 
         lambda_ : float
             The non-negative float that specifies the amount of regularisation.
