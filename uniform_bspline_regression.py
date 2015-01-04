@@ -285,6 +285,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_path')
     parser.add_argument('output_path')
+    parser.add_argument('solver_type', nargs='?', default='dn',
+                        choices=LeastSquaresOptimiser.SOLVER_TYPES)
     parser.add_argument('--output-all', default=False, action='store_true')
     parser.add_argument('--max-num-iterations', type=int, default=100)
     parser.add_argument('--min-radius', type=float, default=1e-9)
@@ -311,6 +313,7 @@ def main():
     print '  lambda_:', lambda_
 
     print 'LeastSquaresOptimiser:'
+    print '  solver_type:', args.solver_type
     print '  max_num_iterations:', args.max_num_iterations
     print '  min_radius: {:g}'.format(args.min_radius)
     print '  max_radius: {:g}'.format(args.max_radius)
@@ -319,7 +322,8 @@ def main():
     print 'LeastSquaresOptimiser Output:'
     ((u1, X1),
      has_converged,
-     states, num_iterations, time_taken) = LeastSquaresOptimiser(c).minimise(
+     states, num_iterations, time_taken
+    ) = LeastSquaresOptimiser(c, args.solver_type).minimise(
         Y, w, lambda_, u, X,
         max_num_iterations=args.max_num_iterations,
         min_radius=args.min_radius,
