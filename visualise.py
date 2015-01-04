@@ -14,7 +14,7 @@ import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from uniform_bspline import Contour
+from uniform_bspline import UniformBSpline
 
 
 # Colours
@@ -30,7 +30,7 @@ def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
         print '  num_control_points:', num_control_points
         print '  dim:', dim
         print '  is_closed:', is_closed
-    c = Contour(degree, num_control_points, dim, is_closed=is_closed)
+    c = UniformBSpline(degree, num_control_points, dim, is_closed=is_closed)
 
     Y, w, u, X = map(lambda k: np.array(z[k]), 'YwuX')
     if verbose:

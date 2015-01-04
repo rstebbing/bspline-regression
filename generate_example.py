@@ -12,7 +12,7 @@ import json
 import numpy as np
 import scipy.spatial
 
-from uniform_bspline import Contour
+from uniform_bspline import UniformBSpline
 
 # float_tuple
 def float_tuple(s):
@@ -51,7 +51,7 @@ def main():
     t = np.linspace(0.0, 1.0, args.num_control_points)[:, np.newaxis]
     X = x0 * (1 - t) + x1 * t
 
-    c = Contour(args.degree, args.num_control_points, args.dim)
+    c = UniformBSpline(args.degree, args.num_control_points, args.dim)
     m0, m1 = c.M(c.uniform_parameterisation(2), X)
     x01 = 0.5 * (x0 + x1)
     X = (np.linalg.norm(x1 - x0) / np.linalg.norm(m1 - m0)) * (X - x01) + x01

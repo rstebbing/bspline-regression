@@ -14,7 +14,7 @@ import os
 import scipy.linalg
 from time import time
 
-from uniform_bspline import Contour
+from uniform_bspline import UniformBSpline
 from util import raise_if_not_shape
 
 
@@ -305,7 +305,7 @@ def main():
     print '  num_control_points:', num_control_points
     print '  dim:', dim
     print '  is_closed:', is_closed
-    c = Contour(degree, num_control_points, dim, is_closed=is_closed)
+    c = UniformBSpline(degree, num_control_points, dim, is_closed=is_closed)
 
     Y, w, u, X = map(lambda k: np.array(z[k]), 'YwuX')
     lambda_ = z['lambda_']

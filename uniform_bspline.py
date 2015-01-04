@@ -17,7 +17,7 @@ from util import previous_float, raise_if_not_shape
 __all__ = ['B',
            'basis_functions',
            'uniform_bspline_basis',
-           'Contour']
+           'UniformBSpline']
 
 
 # B
@@ -139,9 +139,9 @@ def uniform_bspline_basis(d, p=0):
     return globals_[func_name]
 
 
-# Contour
-class Contour(object):
-    """Contour
+# UniformBSpline
+class UniformBSpline(object):
+    """UniformBSpline
 
     Class to facilitate evaluation of points on, and derivatives of, a uniform
     B-spline.
