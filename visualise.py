@@ -129,7 +129,14 @@ def main():
         min_, max_ = zip(*bounds)
         min_, max_ = np.min(min_, axis=0), np.max(max_, axis=0)
         d = 0.025 * (max_ - min_)
-        xlim, ylim = np.c_[min_ - d, max_ + d]
+
+        ndim = d.size
+        if ndim == 2:
+            xlim, ylim = np.c_[min_ - d, max_ + d]
+        elif ndim == 3:
+            xlim, ylim, zlim = np.c_[min_ - d, max_ + d]
+        else:
+            raise ValueError('unable to handle ndim (= {})'.format(ndim))
 
         print 'Output:'
         for input_file, z in zip(input_files, states):
@@ -140,6 +147,8 @@ def main():
             (ax,) = f.axes
             ax.set_xlim(*xlim)
             ax.set_ylim(*ylim)
+            if ndim == 3:
+                ax.set_zlim(*zlim)
 
             input_stem, _ = os.path.splitext(input_file)
             output_path = os.path.join(args.output_path,
