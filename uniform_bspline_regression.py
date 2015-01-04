@@ -125,6 +125,88 @@ class UniformBSplineLeastSquaresOptimiser(object):
         Returns
         -------
         See `return_all`.
+
+        Further Details
+        ---------------
+        The energy `e` to be minimised can be written as:
+
+            e = 0.5 * (r(z)**2).sum()
+
+        where `z` is the concatenated vector of correspondences `u` and control
+        point positions `X` (row first), and `r` is a function which returns
+        the vector of concatenated data point and regularisation residuals.
+
+        Let `de` denote the vector of first derivatives. It is given by:
+
+            de = dot(J(z).T, f(z))
+
+        where `J` is the sparse Jacobian: `J[i, j]` is the first derivative of
+        residual `i` with respect to `z[j]`.
+
+        Similarly, using `J` and `r` instead of `J(z)` and `r(z)`, the matrix
+        of second derivatives `de2` is given by:
+
+            de2 = dot(J.T, J) + sum(r[i] * H[i])                            (1)
+
+        where `H[i]` is the matrix of second derivatives (the "Hessian") for
+        residual `i`.
+
+        In Newton's method, the update `del_z` to minimise `e` is given by:
+
+            del_z = -dot(inv(de2), de)
+
+        If `de2` is not positive definite, then this update cannot be computed.
+        As an alternative, a "damped" version (Levenberg's contribution) can be
+        solved instead:
+
+            del_z = -dot(inv(de2 + D), de)                                  (2)
+
+        where `D` is a diagonal matrix with entries `1 / radius` so that
+        `de2 + D` is positive definite. For large values of `radius`, the
+        contribution of `D` has little effect. For small values, `del_z` tends
+        to `-radius * de2` (gradient descent).
+
+        Here, 'dn' (damped Newton) computes `del_z` exactly using (2) and (1)
+        and 'lm' (Levenberg-Marquardt) approximates `de2` by ignoring all
+        second derivative terms.
+
+        To efficiently compute (2), the sparsity of the problem is leveraged.
+        Since `z = r_[u, X.ravel()]`, and the data residuals are ordered before
+        the regularisation residuals, `J` is block-sparse. Deviating from the
+        Python-like notation so far:
+
+            J = |E   F|
+                |     |
+                |0   G|
+
+        where `E` is block-diagonal. Similarly, `H[i]`, where `i` indexes a
+        data point residual, is also block-sparse:
+
+            H[i] = |P[i]    Q[i]|
+                   |            |
+                   |Q[i].T     0|
+
+        where `P[i]` is diagonal. (`H[i]` for regularisation residuals is 0.)
+
+        Therefore, the linear system of (2), ignoring the leading minus sign,
+        is of the form:
+
+            |E.T*E + r[i]*P[i] + Da    E.T*F + r[i]*Q[i]|   | dza |   | a |
+            |                                           | * |     | = |   |
+            |(E.T*F + r[i]*Q[i]).T    F.T*F + G.T*G + Db|   | dzb |   | b |
+
+        where `D` has been split into diagonal sub-blocks `Da` and `Db`, and
+        `del_z` and `de` have been partitioned into `(dza, dzb)` and `(a, b)`
+        respectively.
+
+        Expanding the above equation gives a pair of simultaneous equations in
+        `dza` and `dzb`. Eliminating `dza`, it turns out that the only matrix
+        inverse in the expression for `dzb` is of the upper left block above
+        (the linear system solved for `dzb` is the Schur complement of the
+        complete system matrix). Since both `E.T * E` and `P[i]` are diagonal,
+        this is trivial. Furthermore, the time taken to compute either a damped
+        Newton or LM update is now linear in the number of data points (a Good
+        Thing).
         """
         # Ensure that the dimensions and values of inputs are valid.
         w = np.atleast_2d(w)
