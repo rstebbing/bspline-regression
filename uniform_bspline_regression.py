@@ -334,30 +334,6 @@ class UniformBSplineLeastSquaresOptimiser(object):
     def _G(self):
         return self._lambda * self._G0
 
-    def _J(self, u, X):
-        """Calculate dense Jacobian. For debugging use only."""
-        E, F, G = self._E(u, X), self._F(u), self._G()
-        E_ = scipy.linalg.block_diag(*E[..., np.newaxis])
-        Z = np.zeros((G.shape[0], E_.shape[1]))
-        return np.r_['0,2', np.c_[E_, F],
-                            np.c_[Z, G]]
-
-    def _S(self, u, X):
-        """Calculate symmetric dense matrix of second and mixed derivatives.
-        For debugging use only."""
-        P, Q = self._P(u, X), self._Q(u)
-        ra, rb = self._r(u, X)
-
-        N, d = u.shape[0], self._c.dim
-
-        n = N + X.size
-        Su = np.zeros((n, n), dtype=float)
-        Su[np.diag_indices(N)] = 0.5 * (P * ra.reshape(-1, d)).sum(axis=1)
-        for i in range(N):
-            for j in range(d):
-                Su[i, N:] += ra[d * i + j] * Q[d * i + j]
-        return Su + Su.T
-
 # main
 def main():
     parser = argparse.ArgumentParser()
