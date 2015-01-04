@@ -32,7 +32,7 @@ class LeastSquaresOptimiser(object):
         self._Gij = i, j
 
         # Initialise `_G0`.
-        n, d = i.shape[0], self._c.dim
+        d = self._c.dim
         G0 = np.zeros((n * d, self._c.num_control_points * d), dtype=float)
         r = np.arange(n)
         for k in range(d):
@@ -78,6 +78,7 @@ class LeastSquaresOptimiser(object):
         self._decrease_factor = 2.0
         self._radius = initial_radius
 
+        # Set `save_state`.
         if return_all:
             states = []
             def save_state(u, X, *args):
@@ -86,9 +87,10 @@ class LeastSquaresOptimiser(object):
             def save_state(*args):
                 pass
 
-        d = self._c.dim
-
         save_state(u, X, self._e(u, X), self._radius)
+
+        # Use `d` for dimension of the problem (convenience).
+        d = self._c.dim
 
         t0 = time()
         update_schur_components, has_converged = True, False
