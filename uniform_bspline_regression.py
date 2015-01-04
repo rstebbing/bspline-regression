@@ -211,7 +211,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
 
         t1 = time()
 
-        return (((u, X), has_converged, states, i, t1 - t0) if return_all else
+        return ((u, X, has_converged, states, i, t1 - t0) if return_all else
                 (u, X))
 
     def _accept_step(self, step_quality):
@@ -321,7 +321,7 @@ def main():
     print '  initial_radius: {:g}'.format(args.initial_radius)
 
     print 'UniformBSplineLeastSquaresOptimiser Output:'
-    ((u1, X1),
+    (u1, X1,
      has_converged,
      states, num_iterations, time_taken
     ) = UniformBSplineLeastSquaresOptimiser(c, args.solver_type).minimise(
