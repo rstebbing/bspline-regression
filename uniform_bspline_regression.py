@@ -20,6 +20,21 @@ from util import raise_if_not_shape
 
 # UniformBSplineLeastSquaresOptimiser
 class UniformBSplineLeastSquaresOptimiser(object):
+    """UniformBSplineLeastSquaresOptimiser
+
+    Class to facilitate fitting a `UniformBSpline` to unstructured point data.
+
+    Parameters
+    ----------
+    contour : UniformBSpline
+        The `UniformBSpline` instance that defines the type of uniform B-spline
+        to fit.
+
+    solver_type : optional, string
+        A string specifying the solver type: either 'dn' (damped Newton,
+        default), or 'lm' (Levenberg-Marquardt).
+    """
+
     SOLVER_TYPES = frozenset(['dn', 'lm'])
 
     def __init__(self, contour, solver_type='dn'):
