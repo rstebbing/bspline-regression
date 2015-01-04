@@ -9,7 +9,7 @@ This repository provides the code necessary to fit uniform B-splines of any degr
 For example, the data points (red) above are approximated by a uniform cubic B-spline (blue) with 14 control points (black).
 
 The primary purpose of this repository is to provide a general B-spline solver which is easy to use, has minimal dependencies, but is still performant.
-The secondary purpose is to provide a starting point for people learning about B-splines, sparse non-linear least squares optimisation, and the Levenberg-Marquardt algorithm in particular.
+The secondary purpose is to provide a starting point for people learning about B-splines, sparse non-linear least squares optimisation, and the damped Newton and Levenberg-Marquardt algorithms in particular.
 
 Author: Richard Stebbing
 
@@ -27,7 +27,7 @@ Getting Started
 
 To generate the above example problem and initialisation:
 ```
-python generate_example.py 512 1 1e-1 3 14 Example_1.json --seed=0 --frequency=3.0
+python generate_example.py 512 1 1e-1 3 14 Example_1.json --seed=0 --frequency=3
 ```
 The arguments passed to [generate_example.py](generate_example.py) are:
 
@@ -116,7 +116,7 @@ python visualise.py Example_3_Output.json -d u -d X --empty
 
 - Fitting a uniform quartic B-spline with 10 control points in 3D:
 ```
-python generate_example.py 128 1 1e-1 4 10 Example_4.json --seed=0 --dim=3
+python generate_example.py 128 1 1e-1 4 10 Example_4.json --seed=0 --frequency=3 --dim=3
 python fit_uniform_bspline.py Example_4.json Example_4_Output.json
 python visualise.py Example_4_Output.json --empty
 ```
