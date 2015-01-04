@@ -418,6 +418,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
     def _G(self):
         return self._lambda * self._G0
 
+
 # main
 def main():
     parser = argparse.ArgumentParser()

@@ -21,6 +21,7 @@ from uniform_bspline import UniformBSpline
 # Colours
 C = dict(b='#377EB8', r='#E41A1C', g='#4DAF4A', o='#FF7F00')
 
+
 # generate_figure
 def generate_figure(z, num_samples, empty=False, disable={}, verbose=True):
     degree, num_control_points, dim, is_closed = (

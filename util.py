@@ -9,12 +9,14 @@
 # Imports
 import re
 
+
 # raise_if_not_shape
 def raise_if_not_shape(name, A, shape):
     """Raise a `ValueError` if the np.ndarray `A` does not have dimensions
     `shape`."""
     if A.shape != shape:
         raise ValueError('{}.shape != {}'.format(name, shape))
+
 
 # previous_float
 PARSE_FLOAT_RE = re.compile(r'([+-]*)0x1\.([\da-f]{13})p(.*)')

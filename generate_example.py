@@ -15,6 +15,7 @@ import scipy.spatial
 
 from uniform_bspline import UniformBSpline
 
+
 # float_tuple
 def float_tuple(s):
     return tuple(float(f) for f in s.split(','))
