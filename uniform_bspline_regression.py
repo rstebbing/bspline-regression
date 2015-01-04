@@ -78,11 +78,12 @@ class UniformBSplineLeastSquaresOptimiser(object):
         G = self._G()
 
         # Set internal variables for `_accept_step` and `_reject_step`.
-        self._min_radius = min_radius
-        self._max_radius = max_radius
+        self._min_radius = max(0.0, min_radius)
+        self._max_radius = max(self._min_radius, max_radius)
 
+        self._radius = max(self._min_radius, min(initial_radius,
+                                                 self._max_radius))
         self._decrease_factor = 2.0
-        self._radius = initial_radius
 
         # Set `save_state`.
         if return_all:
