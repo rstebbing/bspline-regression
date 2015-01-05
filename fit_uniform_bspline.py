@@ -69,7 +69,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
         specified by `X` and the positions of unstructured data points `Y`.
         The exact expression minimised with respect to `X` and `u` is:
 
-            0.5 * ( sum((w * (Y - M(u, X)))**2) + lambda_ * R(X) )
+            0.5 * ( sum(w * (Y - M(u, X))**2) + lambda_ * R(X) )
 
         where `M` is the uniform B-spline position function and `R` is the
         regularisation function (the sum of squared distances between
@@ -89,9 +89,9 @@ class UniformBSplineLeastSquaresOptimiser(object):
 
         u : float, array_like of shape = (N,)
             The vector of initial contour correspondences. Optimally, `u[i]` is
-            the contour coordinate that minimises the squared distance between
-            the uniform B-spline and `Y[i]`: `Y[i] - M(u[i], X)`. Here, only a
-            coarse initialisation is (typically) required.
+            the contour coordinate that minimises the weighted squared distance
+            between the uniform B-spline and `Y[i]`. Here, only a coarse
+            initialisation is (typically) required.
 
         X : float, array_like of shape = (num_control_points, dim)
             The matrix of initial control point positions.
@@ -106,7 +106,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
                     otherwise;
                 `states` is a list of optimisation states comprising of the
                     `u`, `X`, energy, and trust region radius after each
-                    successful optimisation step;
+                    successful optimisation step (includes the initialisation);
                 `n` is the number of total optimisation steps;
                 `t` is the total time taken (measured using `time.time`).
             Otherwise, `minimise` returns `(u, X)`.
@@ -157,8 +157,8 @@ class UniformBSplineLeastSquaresOptimiser(object):
 
             del_z = -dot(inv(de2), de)
 
-        If `de2` is not positive definite, then this update cannot be computed.
-        As an alternative, a "damped" version (Levenberg's contribution) can be
+        If `de2` is not positive definite, then this update is invalid. As an
+        alternative, a "damped" version (Levenberg's contribution) can be
         solved instead:
 
             del_z = -dot(inv(de2 + D), de)                                  (2)
@@ -197,18 +197,18 @@ class UniformBSplineLeastSquaresOptimiser(object):
             |                                           | * |     | = |   |
             |(E.T*F + r[i]*Q[i]).T    F.T*F + G.T*G + Db|   | dzb |   | b |
 
-        where `D` has been split into diagonal sub-blocks `Da` and `Db`, and
+        where `D` has been split into diagonal sub-blocks `Da` and `Db`,
         `del_z` and `de` have been partitioned into `(dza, dzb)` and `(a, b)`
-        respectively.
+        respectively, and summation over `i` is implicit.
 
         Expanding the above equation gives a pair of simultaneous equations in
         `dza` and `dzb`. Eliminating `dza`, it turns out that the only matrix
-        inverse in the expression for `dzb` is of the upper left block above
-        (the linear system solved for `dzb` is the Schur complement of the
-        complete system matrix). Since both `E.T * E` and `P[i]` are diagonal,
-        this is trivial. Furthermore, the time taken to compute either a damped
-        Newton or LM update is now linear in the number of data points (a Good
-        Thing).
+        inverse in the expression for `dzb` is of the upper left block above.
+        That is, the linear system solved for `dzb` is the Schur complement of
+        the complete system matrix. Since both `E.T * E` and `P[i]` are
+        diagonal, this is trivial. Furthermore, the time taken to compute
+        either a damped Newton or LM update is now linear in the number of data
+        points.
         """
         # Ensure that the dimensions and values of inputs are valid.
         w = np.atleast_2d(w)
@@ -355,7 +355,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
             u1 = self._c.clip(u + delta_u)
             X1 = X + delta_X
 
-            # Accept the updates if the energy has decreased, and reject it
+            # Accept the updates if the energy has decreased and reject it
             # otherwise. Also update the trust region radius depending on how
             # well the quadratic approximation modelled the change in energy.
             e1 = self._e(u1, X1)
