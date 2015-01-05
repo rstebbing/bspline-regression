@@ -49,21 +49,24 @@ def main():
     else:
         Y = np.c_[x, y, np.linspace(0.0, 1.0, args.num_data_points)]
 
-    x0, x1 = Y[0].copy(), Y[-1].copy()
+    # Initialise `X` so that the uniform B-spline linearly interpolates between
+    # the first and last noise-free data points.
     t = np.linspace(0.0, 1.0, args.num_control_points)[:, np.newaxis]
-    X = x0 * (1 - t) + x1 * t
+    X = Y[0] * (1 - t) + Y[-1] * t
 
     c = UniformBSpline(args.degree, args.num_control_points, args.dim)
     m0, m1 = c.M(c.uniform_parameterisation(2), X)
-    x01 = 0.5 * (x0 + x1)
-    X = (np.linalg.norm(x1 - x0) / np.linalg.norm(m1 - m0)) * (X - x01) + x01
+    x01 = 0.5 * (X[0] + X[-1])
+    X = (np.linalg.norm(Y[0] - Y[-1]) / np.linalg.norm(m1 - m0)) * (X - x01) + x01
 
+    # Add isotropic zero-mean Gaussian noise to the data.
     if args.seed is not None:
         print('  seed:', args.seed)
         np.random.seed(args.seed)
     print('  sigma:', args.sigma)
     Y += args.sigma * np.random.randn(Y.size).reshape(Y.shape)
 
+    # Set `w`.
     if np.any(np.asarray(args.w) < 0):
         raise ValueError('w <= 0.0 (= {})'.format(args.w))
     if len(args.w) == 1:
@@ -74,13 +77,16 @@ def main():
     else:
         raise ValueError('len(w) is invalid (= {})'.format(len(args.w)))
 
+    # Check `lambda_`.
     if args.lambda_ <= 0.0:
         raise ValueError('lambda_ <= 0.0 (= {})'.format(args.lambda_))
 
+    # Initialise `u`.
     u0 = c.uniform_parameterisation(args.num_init_points)
     D = scipy.spatial.distance.cdist(Y, c.M(u0, X))
     u = u0[D.argmin(axis=1)]
 
+    # Save.
     to_list = lambda _: _.tolist()
     z = dict(degree=args.degree,
              num_control_points=args.num_control_points,
