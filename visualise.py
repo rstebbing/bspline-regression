@@ -112,6 +112,7 @@ def main():
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
 
+        # Load all input files to `states`.
         input_files = sorted(os.listdir(args.input_path),
                              key=lambda f: int(os.path.splitext(f)[0]))
         input_paths = [os.path.join(args.input_path, f) for f in input_files]
@@ -122,9 +123,10 @@ def main():
             with open(input_path, 'r') as fp:
                 states.append(json.load(fp))
 
-        bounds = sum([[(np.min(z[k], axis=0),
-                                                  np.max(z[k], axis=0)) for z in states] for k in 'XY'],
-                     [])
+        # Determine `xlim`, `ylim`, and (potentially) `zlim`.
+        bounds = sum([[(np.min(z[k], axis=0), np.max(z[k], axis=0))
+                       for z in states]
+                      for k in 'XY'], [])
         min_, max_ = list(zip(*bounds))
         min_, max_ = np.min(min_, axis=0), np.max(max_, axis=0)
         d = 0.025 * (max_ - min_)
@@ -137,6 +139,7 @@ def main():
         else:
             raise ValueError('unable to handle ndim (= {})'.format(ndim))
 
+        # Generate each figure.
         print('Output:')
         for input_file, z in zip(input_files, states):
             f = generate_figure(z, args.num_samples,
