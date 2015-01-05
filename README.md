@@ -5,8 +5,8 @@ bspline-regression
   <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-0.png" alt="B-spline regression"/>
 </p>
 
-This repository provides the code necessary to fit uniform B-splines of any degree to unstructured and *unsorted* 2D/3D point data.
-For example, the data points (red) above are approximated by a uniform cubic B-spline (blue) with 14 control points (black).
+This repository provides the code necessary to fit *explicit* uniform B-splines of any degree to *unstructured* 2D/3D/ND point data.
+In the above example, the data points (red) are approximated by a uniform cubic B-spline (blue) with 14 control points (black).
 
 The primary purpose of this repository is to provide a general B-spline solver which is easy to use, has minimal dependencies, but is still performant.
 The secondary purpose is to provide a starting point for people learning about B-splines, sparse non-linear least squares optimisation, and the damped Newton and Levenberg-Marquardt algorithms in particular.
@@ -45,11 +45,11 @@ Value | Argument | Description
 `14` | `num_control_points` | The number of control points.
 `Example_1.json` | `output_path` | The output path.
 `--seed` | `0` | The random number generator seed (optional).
-`--frequency` | `3.0` | The frequency of the `sin` (optional).
+`--frequency` | `3` | The frequency of the `sin` (optional).
 
 Note:
 * `w` can be a pair (2D) or triple (3D) so that `w[i]` is the weight applied to the `i`th dimension of each squared residual.
-This is useful for time-series data where the uncertainty of the measurement (y-axis) is much greater than that of the reported time (x-axis).
+This is useful for simulating time-series data where the uncertainty of the measurement (y-axis) is much greater than that of the reported time (x-axis).
 * Increasing `lambda_` increases the "force" pulling adjacent B-spline control points together.
 
 The output `Example_1.json` is a dictionary of the form:
@@ -77,7 +77,8 @@ python visualise.py Example_1.json --empty
 <p align="center">
   <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-1.png" alt="Initialisation"/>
 </p>
-where `--empty` generates the plot *without* axis labels or a title, and correspondences are shown in orange.
+where `--empty` generates the plot *without* axis labels or a title, and the correspondences are shown in orange.
+(All figures in this document were generated with the additional arguments `--width=8` and `--height=4` but this is omitted for brevity.)
 
 To solve for `X` and `u`:
 ```
@@ -97,6 +98,7 @@ python fit_uniform_bspline.py Example_1.json Example_1_Output --output-all
 python visualise.py Example_1_Output Example_1_Output_Visualisation
 ```
 Additional arguments to [visualise.py](visualise.py) and [fit_uniform_bspline.py](fit_uniform_bspline.py) can be found with `--help`.
+Further details regarding the solver implementation are provided in the docstring for `UniformBSplineLeastSquaresOptimiser.minimise` in [fit_uniform_bspline.py](fit_uniform_bspline.py).
 
 ### Additional Examples
 
@@ -109,6 +111,18 @@ python visualise.py Example_2_Output.json --empty
 <p align="center">
   <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-3.png" alt="Quadratic B-spline"/>
 </p>
+
+Solving with Levenberg-Marquardt instead of damped Newton:
+```
+python fit_uniform_bspline.py Example_2.json Example_2_Output_LM.json lm
+python visualise.py Example_2_Output_LM.json --empty
+```
+<p align="center">
+  <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-3-LM.png" alt="Quadratic B-spline with LM"/>
+</p>
+
+(The final energy achieved with damped Newton is `4.18` whereas Levenberg-Marquardt converges at `6.96`.
+The initial energy is `1.97e3`.)
 
 - Fitting a uniform quintic B-spline with 9 control points to 65536 data points:
 ```
