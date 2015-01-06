@@ -121,7 +121,7 @@ python visualise.py Example_2_Output_LM.json --empty
   <img src="https://github.com/rstebbing/bspline-regression/raw/master/figures/README-3-LM.png" alt="Quadratic B-spline with LM"/>
 </p>
 
-(The final energy achieved with damped Newton is `4.18` whereas Levenberg-Marquardt converges at `6.96`.
+(For comparison, damped Newton converges at `4.18` whereas Levenberg-Marquardt converges at `6.96`.
 The initial energy is `1.97e3`.)
 
 - Fitting a uniform quintic B-spline with 9 control points to 65536 data points:
