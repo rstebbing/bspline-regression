@@ -43,7 +43,7 @@ class UniformBSplineLeastSquaresOptimiser(object):
 
         solver_type = solver_type.lower()
         if solver_type not in self.SOLVER_TYPES:
-            raise ValueError('solver_type not in {}'.format(SOLVER_TYPES))
+            raise ValueError('solver_type not in {}'.format(self.SOLVER_TYPES))
         self._solver_type = solver_type
 
         # Set `_Gij`.
