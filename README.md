@@ -126,7 +126,7 @@ The initial energy is `1.97e3`.)
 
 - Fitting a uniform quintic B-spline with 9 control points to 65536 data points:
 ```
-python generate_example.py 65356 1 1e-1 5 9 Example_3.json --seed=0 --frequency=2 --alpha=0
+python generate_example.py 65536 1 1e-1 5 9 Example_3.json --seed=0 --frequency=2 --alpha=0
 python fit_uniform_bspline.py Example_3.json Example_3_Output.json
 python visualise.py Example_3_Output.json -d u -d X --empty
 ```
